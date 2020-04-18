@@ -1,0 +1,71 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2cm]{geometry}
+\usepackage{hyperref}
+\usepackage[style=numeric]{biblatex}
+\addbibresource{./ref.bib}
+\usepackage{listings}
+\lstset { %
+    language=C++,
+    %backgroundcolor=\color{black!5}, % set backgroundcolor
+    basicstyle=\footnotesize,% basic font setting
+}
+\title{Rules for energy efficiency in C/C++}
+\author{Pietro Ghiglio}
+\begin{document}
+\maketitle
+\tableofcontents{}
+
+\section{Introduction}
+These are some rules that I've found in the papers that I have read in the previous months.
+They mainly refer to the papers \cite{garcia} and \cite{moriso}.
+For each rule I will provide its informal description and eventually a note when needed.
+
+\section{Rules}
+\begin{enumerate}
+\item \textbf{Boolean return} \newline
+Instead than returning the conjunction/disjunction of boolean variables, convert the multiple booleans into an unsigned int with associated flags and return its comparison with 0 or 1. \newline
+Example:
+\begin{lstlisting}
+bool or4(bool a, bool b, bool c, bool d){
+	return a || b || c || d;
+}
+
+#define flagA (1u << 0)
+#define flagB (1u << 1)
+#define flagC (1u << 2)
+#define flagD (1u << 3)
+
+bool or4opt(unsigned int mask){
+	return (mask & (flagA | flagB | flagC | flagD)) != 0;
+}
+
+//usages
+or4(1,0,0,0);
+or4opt(1000);
+\end{lstlisting}
+
+\item \textbf{Row Major accessing} \newline
+
+
+\item \textbf{Passing objects by reference} \newline
+Passing an object or a struct by reference avoids the overhead of creating a complete copy of the argument. \newline
+Example: \newline
+\begin{lstlisting}
+typedef struct {
+	int a;
+	int b;
+} my_s;
+
+int f(my_s value){
+	return s.a+s.b;
+}
+
+int f_opt(my_s* ref){
+	return s->a + s->b;
+}
+\end{lstlisting}
+\end{enumerate}
+
+\printbibliography[heading=bibintoc,title={References}]
+
+\end{document}
