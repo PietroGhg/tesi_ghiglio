@@ -1,7 +1,6 @@
 Links:
 a)https://www.embedded.com/energy-efficient-c-code-for-arm-devices/
 b)https://www.microcontrollertips.com/writing-efficient-c-code-embedded-systems-cost-unnatural-data-sizes/
-c)https://www.microcontrollertips.com/faq-optimizing-power-efficiency-microcontrollers/
 d)https://barrgroup.com/embedded-systems/how-to/low-power-management
 Michael Keating Davidd Flynn et. al.,”Low Power Methodology Manual”, ARM&Synopsis, 2007
 
@@ -92,3 +91,22 @@ arm architecture
 	  __pure (pure function)
 	  __restrict (no write through this pointer changes the value of an item referenced by any other pointer)
 	  __promise a given predicate will br true at this point of execution
+
+8.
+Four classes of optimizations:
+1. Loop transformations:
+   -loop distribution (different loops for independent instructions). it may increase code size and adds more control structure (two loops instead than one).
+    it's effectivness depends on cache size.
+   
+2. Data structure transformations.
+   -array declaration sorting: place more frequently accessed arrays on top of the stack. the first array has offset addressing with costant 0 (less energy)
+   	  	      	       saves energy in the processoor.
+   -array scope modification (local to global): placing arrays in data section instead than on the stack allows to access with constant 0.
+   	  		     	       		but placing local arrays in data consumes more memory: place only frequently accessed arrays.
+   -temporary array insertion: add a small temporary array in which to store the most frequently accessed elements.
+   	      	    	       increases number of instructions (degrades performances) but improves energy efficiency.
+   -scalarization of array elements: place frequently accessed elements in variables. exploits register file. better after loop unrolling
+   -
+3. Inter-procedural transformations.
+4. Operators and control structure transformations.
+Profile(simplescalar) + system-level energy consumpion model (shiue-chakrabarti)
