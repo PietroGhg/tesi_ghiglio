@@ -106,7 +106,34 @@ Four classes of optimizations:
    -temporary array insertion: add a small temporary array in which to store the most frequently accessed elements.
    	      	    	       increases number of instructions (degrades performances) but improves energy efficiency.
    -scalarization of array elements: place frequently accessed elements in variables. exploits register file. better after loop unrolling
-   -
+   -local copy of global variables
+   -pointer-chain reduction.
+   -global variable initialization.
 3. Inter-procedural transformations.
+   -function inlining
+   -subroutines queuing reordering: order the subroutines in a way that makes caller and callee code adjacent. exploits instruction cache.
+   -substitution of a variable passed as address with a local variable.
 4. Operators and control structure transformations.
+   -conditional expression reordering: and connected -> place before the one with lower probability of being true
+   			   	       or connected -> place before the one with higher probability of being true
+				       requires profiling
+   -function call preprocessing: replace a function with a macro that precomputes some results. (see also optimization of modulo division)
 Profile(simplescalar) + system-level energy consumpion model (shiue-chakrabarti)
+
+8.1
+Focus on OS driven, multi process embedded system. Extracts IPC informations by analysing calls to POSIX API. Uses EMSIM energy simulator.
+Energy model for POSIX API
+-Process level concurrency management.
+-Message vectorization.
+-Computation migration.
+-IPC mechanism selection.
+
+8.2
+-loop initialization: initialize when declared.
+-mathematics function: do not declare a function in order to avoid call overhead.
+-passing by reference.
+-avoid tail recursion.
+-global variable within loop.
+-escape with flag.
+
+-xeemu simulation tool

@@ -30,6 +30,33 @@ Techniques for Writing Energy-Efficient Code
 \end{frame}
 
 \begin{frame}
+\frametitle{Regole(2)}
+Reference: Brandolese, Fornaciari - The Impact of Source Code Transformations on Software Power and Energy Consumption.
+\begin{itemize}
+\item Loop distribution.
+\item Array declaration sorting.
+\item Array scope modification.
+\item Temporary array insertion.
+\item Scalarization of array elements.
+\item Subroutines reordering.
+\item Conditional expressions reordering.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Regole - Multi threads}
+Reference: Yunsi - Energy-Optimizing Source Code Transformations for Operating System-Driven Embedded Software
+\newline\newline
+Estrarre informazioni riguardo all'IPC analizzando le chiamate a PThread. Utilizzo di un simulatore (EMSIM).\newline
+\begin{itemize}
+\item Merge dei processi
+\item Vettorizzazione dei messaggi.
+\item Selezione del meccanismo di IPC (pipe, shared mem, messages).
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
 \frametitle{Regole - Architecture specific}
 Reference: \href{https://www.embedded.com/energy-efficient-c-code-for-arm-devices/}{link}
 \begin{itemize}
@@ -39,6 +66,7 @@ Reference: \href{https://www.embedded.com/energy-efficient-c-code-for-arm-device
 \item Direttive al compilatore (funzione pura, puntatore unico, promise)
 \end{itemize}
 \end{frame}
+
 \begin{frame}
 \frametitle{Loop transformations}
 Reference: Mostafa - Embedded Systems Code Optimization and Power Consumption
@@ -48,7 +76,6 @@ Reference: Mostafa - Embedded Systems Code Optimization and Power Consumption
 \begin{frame}
 \frametitle{Dubbi}
 \begin{itemize}
-\item Compilatore vs leggibilità.
 \item Target architecture.
 \item Periferiche.
 \item Regole già presenti.
