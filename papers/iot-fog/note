@@ -1,0 +1,30 @@
+https://github.com/dream-lab/riot-bench
+https://scholar.google.com/scholar?hl=it&as_sdt=0%2C5&q=allocation+of+computation+iot&btnG=
+
+1.
+Sensor Control Layer: Sensor Nodes (SN) -> Gateway Node (eGN) -> eNode
+Information Processing Layer (cloud): aggregates data from SCL
+
+-eGN predicts sleep intervals of SN with exponential average
+ T(n) = a*t(n-1) + (1-a)T(n-1). Predicted value. a depends on the sensor. (periodic ~0.5, trigger ~0)
+ t(n) = T(n) + deltaT. Actual sleep value.
+-eNode fetches data from the cloud and sends them to eGNs in order to allow prediction of sleep intervals.
+ determines allocation of SNs to eGNs.
+
+2.
+model resource allocation as matching problem (game theory):
+-IoT devices: Users={u1,...,uM}. They may have different requirements wrt to latency/data size.
+-Each user ui carries Di (bits) data that corresponds to DCi CPU cycles. Delay requirement Ti.
+-Cloud services providers: Sp = {s1,...,sN}.
+-For each sj: Fog Nodes FNj={fnj1,...,fnjL}, Radio resources: Wj={wj1,...wjK}, computational resources: Cj={cj1,...,cjL}(cycle rate)
+
+Short delay requirement: offload to cloud, otherwise offload to FN.
+Users offer prices to service providers in order to obtain resources: ui offers Oi = a*(Di/Ti).
+Find a mapping between users and (radio, computation) of each sp: ui -> (wjk, cjl).
+rho(i,j,k,l) = 1 if ui is offloaded to FN fn(j,l) using channel w(k,j) owned by spj.
+
+Service time: Ttrans + Tproc + Trecv. Formula (3).
+Problem formulated as MINLP -> NP-Hard. -> Use matching game instead.
+Use service time to establish user's preference, offers for SP's preferences.
+
+

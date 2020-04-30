@@ -1,0 +1,144 @@
+Links:
+a)https://www.embedded.com/energy-efficient-c-code-for-arm-devices/
+b)https://www.microcontrollertips.com/writing-efficient-c-code-embedded-systems-cost-unnatural-data-sizes/
+d)https://barrgroup.com/embedded-systems/how-to/low-power-management
+Michael Keating Davidd Flynn et. al.,”Low Power Methodology Manual”, ARM&Synopsis, 2007
+
+
+
+
+1.
+General lack of tools (both static analysis and profiling) for energy usage estimation.
+If there where tools, people would use them.
+Most of the interest in the mobile app development field.
+
+Embedded systems have few requirements for energy usage:
+"For the embedded group, we found several reasons why practitioners do not have requirements or goals about energy usage. First, many embedded products are not battery-powered (e.g., “In our embedded systems, we always have access to power so energy is not a concern.”). Second, many practitioners are concerned with the overall energy usage of their systems but rely on the hardware, not the software, to reduce energy usage. Finally, satisfying other metrics is more important than reducing enery usage (e.g., “Ensuring the deterministic, real-time behaviour of our embedded device is more important than saving energy.”)."
+
+L. Ardito and M. Morisio. Green it-available data and guidelines for reducing energy consumption in it systems. Sustainable Computing: Informatics and Systems
+
+D. Li, S. Hao, W. G. J. Halfond, and R. Govindan. Calculating source line level energy information for Android applications.
+
+N. Ayewah, D. Hovemeyer, J. Morgenthaler, J. Penix, and W. Pugh. Using static analysis to find bugs. IEEE Software, 25(5):22–29, 2008.
+
+B. Johnson, Y. Song, E. Murphy-Hill, and R. Bowdidge. Why don’t software developers use static analysis tools to find bugs? In Proceedings of the International Conference on Software Engineering.
+
+C. Pang, A. Hindle, B. Adams, and A. Hassan. What do programmers know about software energy consumption? Software, IEEE, 2015.
+
+M. Schirmer, S. Bertel, and J. Penke. Contexto: Leveraging energy awareness in the development of context-aware applications. In 4th Workshop on Energy Aware Software-Engineering and Development, pages 131–140,2014.
+
+
+2.
+Four techniques for energy saving:
+-Dynamic voltage and frequency scaling
+-Low power modes
+-Microarchitectural techniques (eg memory hierarchy)
+-Using GPUs, FPGAs
+
+
+3.
+List of 25 "rules" for energy efficient code.
+Shows that doing these optimizations by hand is better than automatically by the compiler.
+These techniques are probably designed to optimize execution time.
+
+
+4.
+Profile in order to understand core sets of instructions.
+Three types of optimizations:
+-Algorithmic (depend on the task)
+-Data (depend on architecture)
+-Instruction flow (general techniques like loop unrolling. inline assembly)
+
+https://ieeexplore.ieee.org/abstract/document/6530444
+https://ieeexplore.ieee.org/abstract/document/4488783
+
+4.1
+9 techniques for avoiding "energy code smells", < 1% efficiency.
+Citato da articoli interessanti.
+
+https://www.sciencedirect.com/science/article/pii/S0164121216000893
+https://link.springer.com/article/10.1007/s10586-016-0691-5
+
+4.2 / 4.3
+stathistical method to evaluate impact of optimizations. loop unrolling, function inlining, variable declarations.
+
+5.
+Paper about Java. Refactoring have impact on energy usage, but the impacts are often inconstitent arcoss different applications. Time != energy in general. stathistical methods.
+
+6.
+-Compiler optimizations: most of them increase power but reduce overral energy
+-Source to source: loop peeling
+	   	   array declaration sorting
+		   function inlining
+		   figure 4.9, several optimizations
+
+
+7.
+Energy = time*power. Time influences more. Average higher power consuptions doesn't imply higher energy consumption: execution time is reduced.
+
+4.1.1
+Overall guidilines for green software development. Check peripherals (GPS, WiFi, Bluetooth, ...). Reduce amount of data transfered (metric: communication energy cost)
+
+link a
+arm architecture
+-optimize for speed (unless some cases (?) in which small sized code optimizes cache usage)
+-match data type and size: 32 bit arch -> 32 bit data
+-making lenght of each element in array a power of 2 simplifies offset calculations
+-alignment restrictions in passing double words parameters:
+	   fx(int a, double b, int c) //a:r0, b:r2r3, c: stack. double words must be in even-odd register pair
+	   fx(int a, int c, double b) //a:r0, c:r1, b:r2r3.
+-compiler directives:
+	  __pure (pure function)
+	  __restrict (no write through this pointer changes the value of an item referenced by any other pointer)
+	  __promise a given predicate will br true at this point of execution
+
+8.
+Four classes of optimizations:
+1. Loop transformations:
+   -loop distribution (different loops for independent instructions). it may increase code size and adds more control structure (two loops instead than one).
+    it's effectivness depends on cache size.
+   
+2. Data structure transformations.
+   -array declaration sorting: place more frequently accessed arrays on top of the stack. the first array has offset addressing with costant 0 (less energy)
+   	  	      	       saves energy in the processoor.
+   -array scope modification (local to global): placing arrays in data section instead than on the stack allows to access with constant 0.
+   	  		     	       		but placing local arrays in data consumes more memory: place only frequently accessed arrays.
+   -temporary array insertion: add a small temporary array in which to store the most frequently accessed elements.
+   	      	    	       increases number of instructions (degrades performances) but improves energy efficiency.
+   -scalarization of array elements: place frequently accessed elements in variables. exploits register file. better after loop unrolling
+   -local copy of global variables
+   -pointer-chain reduction.
+   -global variable initialization.
+3. Inter-procedural transformations.
+   -function inlining
+   -subroutines queuing reordering: order the subroutines in a way that makes caller and callee code adjacent. exploits instruction cache.
+   -substitution of a variable passed as address with a local variable.
+4. Operators and control structure transformations.
+   -conditional expression reordering: and connected -> place before the one with lower probability of being true
+   			   	       or connected -> place before the one with higher probability of being true
+				       requires profiling
+   -function call preprocessing: replace a function with a macro that precomputes some results. (see also optimization of modulo division)
+Profile(simplescalar) + system-level energy consumpion model (shiue-chakrabarti)
+
+8.1
+Focus on OS driven, multi process embedded system. Extracts IPC informations by analysing calls to POSIX API. Uses EMSIM energy simulator.
+Energy model for POSIX API
+-Process level concurrency management.
+-Message vectorization.
+-Computation migration.
+-IPC mechanism selection.
+
+8.2
+-loop initialization: initialize when declared.
+-mathematics function: do not declare a function in order to avoid call overhead.
+-passing by reference.
+-avoid tail recursion.
+-global variable within loop.
+-escape with flag.
+
+-xeemu simulation tool
+
+
+Salve, le scrivo perché in questo periodo letteralmente non so cosa fare per la tesi, mi pare di aver esaurito gli articoli da leggere (i quali tra l'altro sono abbastanza simili tra loro, anche se alcuni sono a quasi 20 anni di distanza) e non so come procedere ora. Purtroppo mi stanno venendo dubbi sul fatto di riuscire ad avere abbastanza materiale per una tesi da 7 punti. Io in questo periodo avrei tanto tempo per lavorarci ma proprio non trovo cose da fare al momento.
+
+Salve, le scrivo perché in questo periodo mi trovo un po' bloccato, non so bene cosa fare per la tesi, pur avendo tanto tempo a disposizione 
