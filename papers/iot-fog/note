@@ -1,5 +1,6 @@
 https://github.com/dream-lab/riot-bench
 https://scholar.google.com/scholar?hl=it&as_sdt=0%2C5&q=allocation+of+computation+iot&btnG=
+https://scholar.google.com/scholar?hl=it&as_sdt=0%2C5&q=energy+efficient+fog+iot+deployment&btnG=
 
 1.
 Sensor Control Layer: Sensor Nodes (SN) -> Gateway Node (eGN) -> eNode
@@ -26,5 +27,22 @@ rho(i,j,k,l) = 1 if ui is offloaded to FN fn(j,l) using channel w(k,j) owned by 
 Service time: Ttrans + Tproc + Trecv. Formula (3).
 Problem formulated as MINLP -> NP-Hard. -> Use matching game instead.
 Use service time to establish user's preference, offers for SP's preferences.
+
+3.
+another game theory formulation:
+-cloud server has processing power f0.
+-each fog node s has processing power fS.
+-each IoT user n has computation task Tn=(zN,yN). zN=size(bits), yN=processing density(cycle/bit)
+-offloading indicator a(n,s)=1 if n offloads to s. -> foreach n, sum(s){a(n,s)} <= 1
+-connectivity b(n,s)=1 if n in connected to s. -> foreach n,s, a(n,s)<=b(n,s)
+-(1) gives total cost for local computing (in fog node) as linear combination of energy + time.
+-(4) gives total cost for offloaded computation, requires to know data rate of wireless interface and constant depending on wireless interface.
+
+4.
+Formulates latency and bandwidth requirements for each component, software and hardware capabilities for each node and finds a deployment that satisfies it. NP-Hard problem.
+
+
+
+
 
 
