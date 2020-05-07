@@ -1,3 +1,6 @@
 [submodule "benchmarks/riot-bench"]
 	path = benchmarks/riot-bench
 	url = https://github.com/dream-lab/riot-bench.git
+[submodule "benchmarks/DeFog"]
+	path = benchmarks/DeFog
+	url = https://github.com/qub-blesson/DeFog.git

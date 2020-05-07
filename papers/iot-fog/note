@@ -41,6 +41,19 @@ another game theory formulation:
 4.
 Formulates latency and bandwidth requirements for each component, software and hardware capabilities for each node and finds a deployment that satisfies it. NP-Hard problem.
 
+6.
+Computational nodes: Nc (cloud), Nf (fog). <CPU,RAM,Bandwidth> capacity (N)
+Application: directed acyclic graph between modules.
+Each module has <CPU,RAM,Bandwidth> requirements. (V)
+Edge between two nodes -> dataflow. Two types: 1.Periodic (every specific time interval); 2.Event based. (E)
+Mapping function: M: V->N | requiremets <= capacity.
+
+Static characteristics: provided by developers, ex data emission rate of sensors, data processing rate of modules.
+Dyamic characteristics: come into play after deployment, ex network connectivity.
+
+They used iFogSim.
+~quadratic algorithm
+
 
 
 
