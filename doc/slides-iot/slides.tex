@@ -1,0 +1,56 @@
+\documentclass{beamer}
+\usepackage{textcomp} %textrightarrow
+\usetheme{Boadilla}
+\title{Deployment applicazioni IoT}
+\author{Pietro Ghiglio}
+\begin{document}
+\titlepage
+
+\begin{frame}
+\frametitle{Osservazioni}
+\begin{itemize}
+\item Poche regole riguardo sistemi embedded/IoT.
+\item In letteratura, molto di più riguardo al deployment.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Paper 1}
+Reference: Resource Aware Placement of IoT Application Modules in Fog-Cloud Computing Paradigm - Taneja.
+\begin{itemize}
+\item Approccio (molto) euristico.
+\item Capacità di ogni nodo e requisiti di ogni modulo dell'applicazione.
+\item CPU, RAM, Bandwidth.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Paper 2}
+Reference: A Discrete Particle Swarm Optimization Approach for Energy-Efficient IoT Services Placement Over Fog Infrastructures
+- Djemai.
+\begin{itemize}
+\item Algoritmo di ottimizzazione più complesso.
+\item Più parametri richiesti.
+\item Nodi: CPU, RAM, potenza.
+\item Link: tecnologia, bandwidth, latenza.
+\item Moduli: tecnologia, requisiti di CPU, RAM, latenza.
+\item Data dependencies: quantità di dati scambiati, massimo delay.
+\item Massimo delay dell'applicazione tra sensori e attuatori.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Paper 3}
+Reference: Spinal Code: Automatic Code Extraction for Near-User Computation in Fogs - Bongjun
+\newline\newline
+\begin{itemize}
+\item Code annotations + analisi statica.
+\item Partizione delle istruzioni del programma tra i nodi della rete. Minimizza latency.
+\item Aggiunta del codice di comunicazione in caso di data dependency.
+\item Informazioni reperite a runtime + ricompilazione.
+\end{itemize}
+
+\end{frame}
+
+
+\end{document}
