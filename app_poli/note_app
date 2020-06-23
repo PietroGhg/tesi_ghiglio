@@ -1,0 +1,19 @@
+;; This buffer is for text that is not saved, and for Lisp evaluation.
+;; To create a file, visit it with C-x C-f and enter text in its buffer.
+
+utilizzare versione libmango
+filippo sciamanna
+5 branches: 1. multi-thread
+  	    2. seq libmango + master: basata su libmango, sequenziale. una consente di salvare il risultato altra no
+	    3. parall libmango
+	    4. beer: versione finale
+
+moduli - sequenziale: 1.motion kernel: trova roba che si muove.
+       	 	2.classifier kernel: quali oggetti sono quelli che si muovono.
+		3. tracker kernel: segue oggetti nella scena.
+		4. gui kernel: mostra in finestra.
+
+demo: https://www.youtube.com/watch?v=h8-SESa1aX8&feature=youtu.be
+versione sequenziale molto lenta per via del classificatore. spostata parte di object detection da classifier a motion kernel. ora trova movimento direttamente degli oggetti. informazioni passate direttamente al tracker.
+il classifier ora lavora in parallelo al gui kernel. il tracker controlla se il classifier è occupato, se non lo è, richiede di classificare oggetti che sta seguendo.
+
