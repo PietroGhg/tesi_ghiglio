@@ -1,0 +1,84 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/modules/highgui/include/opencv2/highgui.hpp",
+			"labels" : 
+			[
+				"Main",
+				"opencv_highgui",
+				"Module"
+			]
+		},
+		{
+			"file" : "/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/modules/highgui/include/opencv2/highgui/highgui.hpp",
+			"labels" : 
+			[
+				"Main",
+				"opencv_highgui",
+				"Module"
+			]
+		},
+		{
+			"file" : "/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/modules/highgui/include/opencv2/highgui/highgui_c.h",
+			"labels" : 
+			[
+				"Main",
+				"opencv_highgui",
+				"Module"
+			]
+		},
+		{
+			"file" : "/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/modules/highgui/src/window.cpp",
+			"labels" : 
+			[
+				"Main",
+				"opencv_highgui",
+				"Module"
+			]
+		},
+		{
+			"file" : "/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/modules/highgui/src/roiSelector.cpp",
+			"labels" : 
+			[
+				"Main",
+				"opencv_highgui",
+				"Module"
+			]
+		},
+		{
+			"file" : "/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/modules/highgui/src/window_gtk.cpp",
+			"labels" : 
+			[
+				"Main",
+				"opencv_highgui",
+				"Module"
+			]
+		},
+		{
+			"file" : "/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/modules/highgui/src/precomp.hpp",
+			"labels" : 
+			[
+				"Main",
+				"opencv_highgui",
+				"Module"
+			]
+		},
+		{
+			"file" : "/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/build/cvconfig.h"
+		},
+		{
+			"file" : "/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/build/opencv2/opencv_modules.hpp"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"Main",
+			"opencv_highgui",
+			"Module"
+		],
+		"name" : "opencv_highgui"
+	}
+}

@@ -1,0 +1,17 @@
+# Target labels
+ Main
+ opencv_highgui
+ AccuracyTest
+# Source files and their labels
+/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/modules/highgui/test/test_gui.cpp
+ Main
+ opencv_highgui
+ AccuracyTest
+/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/modules/highgui/test/test_main.cpp
+ Main
+ opencv_highgui
+ AccuracyTest
+/home/pietro/Documents/Polimi/Quinto anno/tesi/app_poli/opencv-master/modules/highgui/test/test_precomp.hpp
+ Main
+ opencv_highgui
+ AccuracyTest
