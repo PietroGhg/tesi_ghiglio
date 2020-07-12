@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/pietro/Desktop/Quinto anno/tesi/code/build",
-  "command": "/bin/c++    -g -fPIC   -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o AddIRDebug/CMakeFiles/AddIRDebug.dir/AddIRDebug.cpp.o -c \"/home/pietro/Desktop/Quinto anno/tesi/code/AddIRDebug/AddIRDebug.cpp\"",
-  "file": "/home/pietro/Desktop/Quinto anno/tesi/code/AddIRDebug/AddIRDebug.cpp"
-}
-]
