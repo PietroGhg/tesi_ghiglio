@@ -36,5 +36,6 @@ add_executable(map
 )
 
 target_link_libraries(map ${llvm_libs})
+target_compile_options(map PRIVATE -g)
 set_property(TARGET map PROPERTY CXX_STANDARD 14)
 set_property(TARGET map PROPERTY CXX_STANDARD_REQUIRED ON)

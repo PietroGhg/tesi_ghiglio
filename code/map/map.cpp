@@ -23,9 +23,13 @@ int main(int argc, char* argv[]){
     auto *Obj = dyn_cast<ObjectFile>(BinOrErr->get());
     std::unique_ptr<DWARFContext> DCtx_ptr = DWARFContext::create(*Obj);
     DWARFContext* DCtx = DCtx_ptr.get();
-    DIDumpOptions options;
-    for(auto& unit : DCtx->compile_units()){
-        unit.get()->dump(errs(), options);
+    auto units = DCtx->compile_units();
+    for(auto& unit : units){
+        const DWARFDebugLine::LineTable* table = DCtx->getLineTableForUnit(unit.get());
+        if(table)
+            table->dump(errs(), DIDumpOptions());
+        else
+            errs() << "table is null\n";
     }
 
     
