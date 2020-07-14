@@ -11,25 +11,11 @@ list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(AddLLVM)
 
 llvm_map_components_to_libnames(llvm_libs
-  AggressiveInstCombine
-  Analysis
-  BitWriter
-  CodeGen
-  Core
-  Coroutines
   debuginfodwarf
-  IPO
-  IRReader
-  InstCombine
-  Instrumentation
-  MC
-  ObjCARCOpts
-  ScalarOpts
-  Support
-  Target
-  TransformUtils
-  Vectorize
-  Passes)
+  ${LLVM_TARGETS_TO_BUILD} #for InitAllTargets
+)
+
+
 
 add_executable(map
   map.cpp

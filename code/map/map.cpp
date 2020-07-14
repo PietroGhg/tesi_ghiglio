@@ -1,36 +1,86 @@
-/*Dwarfcontext::create
-getlinetableforunit
-
-per aprire: string -> memory buffer -> object::createBinary -> 
-auto *Obj = dyn_cast<ObjectFile>(BinOrErr->get()), Dwarfcontext::create(obj, ...)*/
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/DebugInfo/DIContext.h"
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/MC/MCTargetOptions.h"
+#include "llvm/MC/MCAsmInfo.h"
+#include "llvm/MC/MCRegisterInfo.h"
+#include "llvm/MC/MCObjectFileInfo.h"
+#include "llvm/MC/MCContext.h"
+
+//targets for disassembly
+#include "llvm/Support/TargetSelect.h"
+
+#include <string>
 
 using namespace llvm;
 using namespace object;
+using LinesMat = std::vector<std::vector<SectionedAddress>>;
 
-int main(int argc, char* argv[]){
-    StringRef Filename(argv[1]);
-    ErrorOr<std::unique_ptr<MemoryBuffer>> BuffOrErr = MemoryBuffer::getFileOrSTDIN(Filename);
+
+LinesMat getLinesMat(DWARFContext& DCtx){
+    LinesMat lines;
     
-    std::unique_ptr<MemoryBuffer> Buffer = std::move(BuffOrErr.get());
-    Expected<std::unique_ptr<Binary>> BinOrErr = object::createBinary(*Buffer);
+    auto units = DCtx.compile_units();
     
-    auto *Obj = dyn_cast<ObjectFile>(BinOrErr->get());
-    std::unique_ptr<DWARFContext> DCtx_ptr = DWARFContext::create(*Obj);
-    DWARFContext* DCtx = DCtx_ptr.get();
-    auto units = DCtx->compile_units();
-    for(auto& unit : units){
-        const DWARFDebugLine::LineTable* table = DCtx->getLineTableForUnit(unit.get());
-        if(table)
-            table->dump(errs(), DIDumpOptions());
+    for(auto& unit : units){ //TODO: deal with multiple units
+        const DWARFDebugLine::LineTable* table = DCtx.getLineTableForUnit(unit.get());
+        if(table){
+            int max = 0;
+            for(auto row : table->Rows){
+                if(row.Line > max) max = row.Line;
+            }
+            //matrix line x addresses
+            lines.resize(max+1);
+            for(auto row : table->Rows){
+                lines[row.Line].push_back(row.Address);
+            }
+            
+        }
         else
             errs() << "table is null\n";
     }
+    return lines;
+}
+
+int main(int argc, char* argv[]){
+    
+    StringRef Filename(argv[1]);
+    ErrorOr<std::unique_ptr<MemoryBuffer>> BuffOrErr = MemoryBuffer::getFileOrSTDIN(Filename);      
+    std::unique_ptr<MemoryBuffer> Buffer = std::move(BuffOrErr.get());  
+    Expected<std::unique_ptr<Binary>> BinOrErr = object::createBinary(*Buffer);  
+    auto Obj = dyn_cast<ObjectFile>(BinOrErr->get()); 
+    auto DCtx_ptr = DWARFContext::create(*Obj);
+    DWARFContext* DCtx = DCtx_ptr.get();
+
+    LinesMat lines = getLinesMat(*DCtx);
+    int i = 0;
+    for(auto line : lines){
+        errs() << i << ": " << line.size() << " ";
+        for(auto& addr : line){
+            errs() << addr.Address << " ";
+        }
+        errs() << "\n";
+        i++;
+    }
+
+    //Creates an MCContext given an object file.
+    std::string Error;
+    auto theTriple = Obj->makeTriple();
+    llvm::InitializeAllTargets();
+    for(auto& tgt : TargetRegistry::targets()){
+        errs() << "a";
+    }
+    const Target* theTarget = TargetRegistry::lookupTarget(theTriple.getTriple(), Error);
+    errs() << Error << "\n";
+    std::unique_ptr<const MCRegisterInfo> MRI( theTarget->createMCRegInfo(theTriple.str()) );
+    MCTargetOptions MCOptions;
+    std::unique_ptr<const MCAsmInfo> AsmInfo( theTarget->createMCAsmInfo(*MRI, theTriple.str(), MCOptions) );
+    MCObjectFileInfo MOFI;
+    MCContext Ctx(AsmInfo.get(), MRI.get(), &MOFI);
 
     
 }

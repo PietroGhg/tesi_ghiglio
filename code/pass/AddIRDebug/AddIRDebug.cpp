@@ -1,4 +1,4 @@
-//opt -S -load=./AddIRDebug.so -addIrdbg test.ll 
+//opt -S -load=./AddIRDebug.so -addIRdbg test.ll 
 //Module pass that produces a .ll file such that the line debug info is replaced with its own line number.
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
@@ -41,8 +41,8 @@ struct AddIRDebug : public ModulePass {
 
     return false;
   }
-}; // end of struct Hello
-}  // end of anonymous namespace
+}; 
+}  
 
 char AddIRDebug::ID = 0;
 static RegisterPass<AddIRDebug> X("addIRdbg", "Adds IR line to debug info",
