@@ -19,21 +19,29 @@ struct AddIRDebug : public ModulePass {
   static char ID;
   AddIRDebug() : ModulePass(ID) {}
 
+  MDNode* oldScope;
+  DILocation* oldLoc;
+  bool oldImplicit;
+  DebugLoc new_loc;
+
   bool runOnModule(Module& M) override {
     unsigned line_count = 0;
     for(auto& f : M.getFunctionList()){  
       for(auto& bb : f.getBasicBlockList()){
         for(auto& i : bb.getInstList()){
-          DebugLoc new_loc;
           if(auto loc = i.getDebugLoc()){
             new_loc = DebugLoc::get(line_count, 0, loc.getScope(), loc.getInlinedAt(), loc.isImplicitCode());
-                        
+            i.setDebugLoc(new_loc);   
+            errs() << i << " " << i.getDebugLoc().getLine() << "\n";                  
           }
           else{
-            new_loc = DebugLoc::get(line_count, 0, nullptr, nullptr, false);       
+            //new_loc = DebugLoc::get(line_count, 0, oldScope, oldLoc, oldImplicit);   
+            //TODO: set location when previously not existant
+            errs() << i << " NO LOCATION \n";
           }
-          i.setMetadata(LLVMContext::MD_dbg, new_loc.get()); //IR/FixedMetadataKinds.def 
-          errs() << i << " line: " << line_count << "\n";
+          
+           //IR/FixedMetadataKinds.def 
+          //errs() << i << " line: " << i.getDebugLoc().getLine() << "\n";
           line_count++;
          }
         }

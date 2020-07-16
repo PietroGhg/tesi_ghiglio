@@ -10,6 +10,9 @@
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCInstrAnalysis.h"
+#include "llvm/MC/MCDisassembler/MCDisassembler.h"
+#include "llvm/ADT/StringExtras.h" //arrayRefFromStringRef
 
 //targets for disassembly
 #include "llvm/Support/TargetSelect.h"
@@ -71,9 +74,6 @@ int main(int argc, char* argv[]){
     std::string Error;
     auto theTriple = Obj->makeTriple();
     llvm::InitializeAllTargets();
-    for(auto& tgt : TargetRegistry::targets()){
-        errs() << "a";
-    }
     const Target* theTarget = TargetRegistry::lookupTarget(theTriple.getTriple(), Error);
     errs() << Error << "\n";
     std::unique_ptr<const MCRegisterInfo> MRI( theTarget->createMCRegInfo(theTriple.str()) );
@@ -81,6 +81,35 @@ int main(int argc, char* argv[]){
     std::unique_ptr<const MCAsmInfo> AsmInfo( theTarget->createMCAsmInfo(*MRI, theTriple.str(), MCOptions) );
     MCObjectFileInfo MOFI;
     MCContext Ctx(AsmInfo.get(), MRI.get(), &MOFI);
+
+    //MCDisassembler
+    std::unique_ptr<const MCSubtargetInfo> STI( 
+        theTarget->createMCSubtargetInfo(theTriple.str(), "", ""));
+    std::unique_ptr<MCDisassembler> DisAsm(
+      theTarget->createMCDisassembler(*STI, Ctx));
+
+    //MCInstrAnalysis
+    std::unique_ptr<const MCInstrInfo> MII(theTarget->createMCInstrInfo());
+    std::unique_ptr<const MCInstrAnalysis> MIA(
+      theTarget->createMCInstrAnalysis(MII.get()));
+    
+    //MCDisassembler->getInstruction
+    for(auto& Section : Obj->sections()){
+        if(Section.isText()){
+            errs() << Section.getAddress() << "\n";
+            ArrayRef<uint8_t> Bytes = arrayRefFromStringRef(Section.getContents().get());
+            
+
+        }
+    }
+    
+    /*MCInstrInfo info;
+    uint64_t Size;
+    for(line : lines){
+        for(auto& addr : line){
+            //DisAsm->getInstruction(info, Size, ????, addr.Address, errs());
+        }
+    }*/
 
     
 }

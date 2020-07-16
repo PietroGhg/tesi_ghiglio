@@ -1,0 +1,7 @@
+https://github.com/banach-space/llvm-tutor/blob/master/lib/InjectFuncCall.cpp
+https://releases.llvm.org/2.6/docs/tutorial/JITTutorial1.html
+
+ogni volta che c'è una call in llvm-ir, chiama push(file, line), effettua la call e poi chiama pop()
+variabile globale (head dello stack)
+ogni volta che eseguo un bb: dump bb_id + stack
+
