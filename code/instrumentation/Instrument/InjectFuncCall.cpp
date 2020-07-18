@@ -4,6 +4,8 @@
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Passes/PassBuilder.h"
 
+#include "llvm/IR/GlobalValue.h" //global variable linkage types
+
 using namespace llvm;
 
 #define DEBUG_TYPE "inject-func-call"
@@ -12,102 +14,77 @@ using namespace llvm;
 // InjectFuncCall implementation
 //-----------------------------------------------------------------------------
 bool InjectFuncCall::runOnModule(Module &M) {
+  auto &CTX = M.getContext();
+
+  //define struct type
+  auto s_type = StructType::create(CTX, "s_stack");
+  ArrayRef<Type*> elements = {IntegerType::getInt32Ty(CTX), s_type};
+  s_type->setBody(elements, true);
+
+  //inject global variable
+  
+  IRBuilder<> builder(CTX);
+  Instruction *I = &*inst_begin(M.getFunction("main"));
+  builder.SetInsertPoint(I);
+  M.getOrInsertGlobal("globalKey", builder.getInt64Ty());
+  GlobalVariable* g_var = M.getNamedGlobal("globalKey");
+  g_var->setLinkage(GlobalValue::InternalLinkage);
+  g_var->setAlignment(Align(8));
+  g_var->setInitializer(builder.getInt64(69));
+  g_var->setConstant(false);
+
   bool injectedAtLeastOnce = false;
 
-  auto &CTX = M.getContext();
-  //Function arguments: (int32, int32)
-  /*IntegerType* file_id_arg = IntegerType::getInt32Ty(CTX);
-  IntegerType* line_num_arg = IntegerType::getInt32Ty(CTX);
-  ArrayRef<Type*> push_args{file_id_arg, line_num_arg};*/
+
   PointerType *PrintfArgTy = PointerType::getUnqual(Type::getInt8Ty(CTX));
 
-  // STEP 1: Inject the declaration of push
-  // ----------------------------------------
-  // Create (or _get_ in cases where it's already available) the following
-  // declaration in the IR module:
-  //    declare void @push(i32, i32)
-  // It corresponds to the following C declaration:
-  //    void push(int, int)
+
   FunctionType *PrintfTy = FunctionType::get(
       IntegerType::getInt32Ty(CTX),
       PrintfArgTy,
       true); //isVarArgs
   
-  /*FunctionType *pushTy = FunctionType::get(
-      IntegerType::getVoidTy(CTX),
-      push_args,
-      false); //isVarArgs
-  */
-  FunctionCallee Printf = M.getOrInsertFunction("printf", PrintfTy);
-  //FunctionCallee push= M.getOrInsertFunction("push", pushTy);
-  
 
-  // Set attributes as per inferLibFuncAttributes in BuildLibCalls.cpp
+  FunctionCallee Printf = M.getOrInsertFunction("printf", PrintfTy);
+
   Function *PrintfF = dyn_cast<Function>(Printf.getCallee());
   PrintfF->setDoesNotThrow();
   PrintfF->addParamAttr(0, Attribute::NoCapture);
   PrintfF->addParamAttr(0, Attribute::ReadOnly);
-  //Function *pushF= dyn_cast<Function>(push.getCallee());
-  //TODO: check these
-  /*pushF->setDoesNotThrow();
-  pushF->setCallingConv(CallingConv::C);
-  pushF->addParamAttr(0, Attribute::NoCapture);
-  pushF->addParamAttr(0, Attribute::ReadOnly);*/
 
-
-  // STEP 2: Inject a global variable that will hold the printf format string
-  // ------------------------------------------------------------------------
-  //TODO: do something like that for the stack thing
   llvm::Constant *PrintfFormatStr = llvm::ConstantDataArray::getString(
-      CTX, "(llvm-tutor) Hello from: %s\n(llvm-tutor)   called at line: %d\n");
+      CTX, "(llvm-tutor) Hello from: %s\n(llvm-tutor)   called at line: %d   global: %d\n");
 
   Constant *PrintfFormatStrVar =
       M.getOrInsertGlobal("PrintfFormatStr", PrintfFormatStr->getType());
   dyn_cast<GlobalVariable>(PrintfFormatStrVar)->setInitializer(PrintfFormatStr);
 
-  // STEP 3: For each function in the module, inject a call to printf
-  // ----------------------------------------------------------------
+
   for (auto &F : M) {
     if (F.isDeclaration())
       continue;
 
     for(auto& bb : F){
       for(auto& i : bb){
-        if(isa<CallInst>(i) && i.getDebugLoc()){
-          //create call instruction using callinstruction::create
-          IRBuilder<> builder(&i);
+        if(isa<CallInst>(i) && i.getDebugLoc() && !isa<DbgInfoIntrinsic>(i)){
+          auto line = i.getDebugLoc().getLine();
+          
+          //IRBuilder<> builder(&i);
+          builder.SetInsertPoint(&i);
           auto i_call = dyn_cast<CallInst>(&i);
+          auto name_str = i_call->getCalledFunction()->getName();
           auto FuncName = builder.CreateGlobalStringPtr(i_call->getCalledFunction()->getName());
           llvm::Value *FormatStrPtr =
             builder.CreatePointerCast(PrintfFormatStrVar, PrintfArgTy, "formatStr");
+          
+          //load global variable
+          auto load = builder.CreateLoad(g_var, "load_g_var");
           builder.CreateCall(
-            Printf, {FormatStrPtr, FuncName, builder.getInt32(i.getDebugLoc().getLine() )});
+            Printf, {FormatStrPtr, FuncName, builder.getInt32(line), load});
           injectedAtLeastOnce = true;
         }
       }
     }
-
-    /*// Get an IR builder. Sets the insertion point to the top of the function
-    IRBuilder<> Builder(&*F.getEntryBlock().getFirstInsertionPt());
-
-    // Inject a global variable that contains the function name
-    auto FuncName = Builder.CreateGlobalStringPtr(F.getName());
-
-    // Printf requires i8*, but PrintfFormatStrVar is an array: [n x i8]. Add
-    // a cast: [n x i8] -> i8*
-    llvm::Value *FormatStrPtr =
-        Builder.CreatePointerCast(PrintfFormatStrVar, PrintfArgTy, "formatStr");
-
-    // The following is visible only if you pass -debug on the command line
-    // *and* you have an assert build.
-    LLVM_DEBUG(dbgs() << " Injecting call to printf inside " << F.getName()
-                      << "\n");
-
-    // Finally, inject a call to printf
-    Builder.CreateCall(
-        Printf, {FormatStrPtr, FuncName, Builder.getInt32(F.arg_size())});
-
-    injectedAtLeastOnce = true;*/
   }
 
   return injectedAtLeastOnce;
