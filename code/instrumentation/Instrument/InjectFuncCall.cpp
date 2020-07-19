@@ -5,11 +5,46 @@
 #include "llvm/Passes/PassBuilder.h"
 
 #include "llvm/IR/GlobalValue.h" //global variable linkage types
-#include "llvm/IR/Type.h" //type->dump()
 
 using namespace llvm;
 
 #define DEBUG_TYPE "inject-func-call"
+
+FunctionCallee createPrintStack(LLVMContext& CTX, Module& M){
+  IRBuilder<> builder(CTX);
+
+  GlobalVariable* head_var = M.getNamedGlobal("stack_head");
+  if(!head_var) errs()<< "ok\n";
+  
+  llvm::Constant *PrintfFormatStr = llvm::ConstantDataArray::getString(
+      CTX, "Hello from basic block: %d\n\texecuted from line: %d\n");
+  Constant *PrintfFormatStrVar =
+      M.getOrInsertGlobal("PrintfFormatStr", PrintfFormatStr->getType());
+  dyn_cast<GlobalVariable>(PrintfFormatStrVar)->setInitializer(PrintfFormatStr);
+
+  Function* Printf = M.getFunction("printf");
+  auto PrintfArgTy = Printf->getFunctionType()->params()[0];
+  
+
+  FunctionType* print_stack_ty = FunctionType::get(Type::getVoidTy(CTX),
+                                                  {Type::getInt32Ty(CTX)},
+                                                  false);
+  FunctionCallee print_stack = M.getOrInsertFunction("print_stack", print_stack_ty);
+  Function* print_stackF = dyn_cast<Function>(print_stack.getCallee());
+  //TODO: attributes?
+  BasicBlock* bb1 = BasicBlock::Create(CTX, "print_stack_bb1", print_stackF);
+  builder.SetInsertPoint(bb1);
+  auto i = builder.CreateLoad(head_var, "load_head");
+  auto i2 = builder.CreateGEP(i, {builder.getInt32(0), builder.getInt32(0)}, "ha_ref");
+  auto i3 = builder.CreateLoad(i2, "load_ha");
+  llvm::Value *FormatStrPtr =
+      builder.CreatePointerCast(PrintfFormatStrVar, PrintfArgTy, "formatStr");
+  builder.CreateCall(
+      Printf, {FormatStrPtr, print_stackF->getArg(0), i3});
+  builder.CreateRet(nullptr);
+
+  return std::move(print_stack);
+}
 
 //-----------------------------------------------------------------------------
 // InjectFuncCall implementation
@@ -19,7 +54,6 @@ bool InjectFuncCall::runOnModule(Module &M) {
 
   //define struct type
   auto s_type = StructType::create(CTX, "s_stack");
-  //auto s_pointer_type = PointerType::getUnqual(s_type); //TODO: chiedi per address space
   auto s_pointer_type = s_type->getPointerTo();
   ArrayRef<Type*> elements = {IntegerType::getInt32Ty(CTX), s_pointer_type};
   s_type->setBody(elements, true);
@@ -37,7 +71,6 @@ bool InjectFuncCall::runOnModule(Module &M) {
 
 
   //inject call to malloc at the beginning of the main function
-
   auto malloc_call = CallInst::CreateMalloc(I, 
                                             Type::getInt64Ty(CTX),
                                             s_pointer_type->getPointerElementType(),
@@ -49,22 +82,13 @@ bool InjectFuncCall::runOnModule(Module &M) {
   auto st = builder.CreateStore(malloc_call, head_var, false);
   auto h1 = builder.CreateLoad(head_var, "h1");   //load head
   auto ha1 = builder.CreateGEP(h1, {builder.getInt32(0),builder.getInt32(0)}, "ha"); //get pointer to head->a
-  auto sa1 = builder.CreateStore(builder.getInt32(42), ha1); //head->a = 42
+  auto sa1 = builder.CreateStore(builder.getInt32(42), ha1); //TODO: set actual line of main
 
-
-  //inject global variable
-
-  M.getOrInsertGlobal("globalKey", builder.getInt64Ty());
-  GlobalVariable* g_var = M.getNamedGlobal("globalKey");
-  builder.CreateStore(builder.getInt64(11), g_var);
-  g_var->setLinkage(GlobalValue::InternalLinkage);
-  //g_var->setAlignment(Align(8));
-  g_var->setInitializer(builder.getInt64(0));
-  g_var->setConstant(false);
 
   bool injectedAtLeastOnce = false;
+  unsigned bb_count = 0;
 
-
+  //definition of printf
   PointerType *PrintfArgTy = PointerType::getUnqual(Type::getInt8Ty(CTX));
 
 
@@ -81,39 +105,29 @@ bool InjectFuncCall::runOnModule(Module &M) {
   PrintfF->addParamAttr(0, Attribute::NoCapture);
   PrintfF->addParamAttr(0, Attribute::ReadOnly);
 
-  llvm::Constant *PrintfFormatStr = llvm::ConstantDataArray::getString(
-      CTX, "Hello from: %s\n   called at line: %d   global: %d\n");
-
-  Constant *PrintfFormatStrVar =
-      M.getOrInsertGlobal("PrintfFormatStr", PrintfFormatStr->getType());
-  dyn_cast<GlobalVariable>(PrintfFormatStrVar)->setInitializer(PrintfFormatStr);
+  //definition of print_stack: void print_stack(int bb_id)
+  FunctionCallee print_stack = createPrintStack(CTX, M);
 
 
   for (auto &F : M) {
-    if (F.isDeclaration())
+    if (F.isDeclaration() || F.getName() == "print_stack")
       continue;
 
     for(auto& bb : F){
+        //instrument basic block in order to print stack at the beginning of its execution
+        if(F.getName() != "main")
+          builder.SetInsertPoint(&*(bb.getFirstInsertionPt()));
+        else
+          builder.SetInsertPoint(sa1->getNextNode());
+        //inject a call to print_stack(bb_count)
+        builder.CreateCall(print_stack, {builder.getInt32(bb_count)});
+        bb_count++;
+        
       for(auto& i : bb){
         if(isa<CallInst>(i) && i.getDebugLoc() && !isa<DbgInfoIntrinsic>(i)){
-          auto line = i.getDebugLoc().getLine();
           //before performing the call, push a new line on the stack
           //after performing the call, pop from the stack
-          builder.SetInsertPoint(&i);
-          auto i_call = dyn_cast<CallInst>(&i);
-          auto name_str = i_call->getCalledFunction()->getName();
-          auto FuncName = builder.CreateGlobalStringPtr(i_call->getCalledFunction()->getName());
-          llvm::Value *FormatStrPtr =
-            builder.CreatePointerCast(PrintfFormatStrVar, PrintfArgTy, "formatStr");
 
-          //load global variable
-          //auto load = builder.CreateLoad(g_var, "load_g_var");
-          //load head->a
-          auto h = builder.CreateLoad(head_var, "h");
-          auto ha = builder.CreateGEP(h, {builder.getInt32(0), builder.getInt32(0)}, "ha");
-          ha = builder.CreateLoad(ha, "haa");
-          builder.CreateCall(
-            Printf, {FormatStrPtr, FuncName, builder.getInt32(line), ha});
           injectedAtLeastOnce = true;
         }
       }
