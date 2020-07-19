@@ -5,6 +5,7 @@
 #include "llvm/Passes/PassBuilder.h"
 
 #include "llvm/IR/GlobalValue.h" //global variable linkage types
+#include "llvm/IR/Type.h" //type->dump()
 
 using namespace llvm;
 
@@ -18,19 +19,47 @@ bool InjectFuncCall::runOnModule(Module &M) {
 
   //define struct type
   auto s_type = StructType::create(CTX, "s_stack");
-  ArrayRef<Type*> elements = {IntegerType::getInt32Ty(CTX), s_type};
+  //auto s_pointer_type = PointerType::getUnqual(s_type); //TODO: chiedi per address space
+  auto s_pointer_type = s_type->getPointerTo();
+  ArrayRef<Type*> elements = {IntegerType::getInt32Ty(CTX), s_pointer_type};
   s_type->setBody(elements, true);
 
-  //inject global variable
-  
+
+  //inject global pointer to the head of the stack
   IRBuilder<> builder(CTX);
   Instruction *I = &*inst_begin(M.getFunction("main"));
   builder.SetInsertPoint(I);
+  M.getOrInsertGlobal("stack_head", s_pointer_type);
+  GlobalVariable* head_var = M.getNamedGlobal("stack_head");
+  head_var->setConstant(false);
+  head_var->setLinkage(GlobalValue::InternalLinkage);
+  head_var->setInitializer(ConstantPointerNull::get(s_pointer_type));
+
+
+  //inject call to malloc at the beginning of the main function
+
+  auto malloc_call = CallInst::CreateMalloc(I, 
+                                            Type::getInt64Ty(CTX),
+                                            s_pointer_type->getPointerElementType(),
+                                            builder.getInt64(16),
+                                            nullptr,
+                                            nullptr,
+                                            "malloc_head");
+  builder.SetInsertPoint(malloc_call->getNextNode()); //since IRBuilder doesn't have createMalloc
+  auto st = builder.CreateStore(malloc_call, head_var, false);
+  auto h1 = builder.CreateLoad(head_var, "h1");   //load head
+  auto ha1 = builder.CreateGEP(h1, {builder.getInt32(0),builder.getInt32(0)}, "ha"); //get pointer to head->a
+  auto sa1 = builder.CreateStore(builder.getInt32(42), ha1); //head->a = 42
+
+
+  //inject global variable
+
   M.getOrInsertGlobal("globalKey", builder.getInt64Ty());
   GlobalVariable* g_var = M.getNamedGlobal("globalKey");
+  builder.CreateStore(builder.getInt64(11), g_var);
   g_var->setLinkage(GlobalValue::InternalLinkage);
-  g_var->setAlignment(Align(8));
-  g_var->setInitializer(builder.getInt64(69));
+  //g_var->setAlignment(Align(8));
+  g_var->setInitializer(builder.getInt64(0));
   g_var->setConstant(false);
 
   bool injectedAtLeastOnce = false;
@@ -43,7 +72,7 @@ bool InjectFuncCall::runOnModule(Module &M) {
       IntegerType::getInt32Ty(CTX),
       PrintfArgTy,
       true); //isVarArgs
-  
+
 
   FunctionCallee Printf = M.getOrInsertFunction("printf", PrintfTy);
 
@@ -53,7 +82,7 @@ bool InjectFuncCall::runOnModule(Module &M) {
   PrintfF->addParamAttr(0, Attribute::ReadOnly);
 
   llvm::Constant *PrintfFormatStr = llvm::ConstantDataArray::getString(
-      CTX, "(llvm-tutor) Hello from: %s\n(llvm-tutor)   called at line: %d   global: %d\n");
+      CTX, "Hello from: %s\n   called at line: %d   global: %d\n");
 
   Constant *PrintfFormatStrVar =
       M.getOrInsertGlobal("PrintfFormatStr", PrintfFormatStr->getType());
@@ -68,19 +97,23 @@ bool InjectFuncCall::runOnModule(Module &M) {
       for(auto& i : bb){
         if(isa<CallInst>(i) && i.getDebugLoc() && !isa<DbgInfoIntrinsic>(i)){
           auto line = i.getDebugLoc().getLine();
-          
-          //IRBuilder<> builder(&i);
+          //before performing the call, push a new line on the stack
+          //after performing the call, pop from the stack
           builder.SetInsertPoint(&i);
           auto i_call = dyn_cast<CallInst>(&i);
           auto name_str = i_call->getCalledFunction()->getName();
           auto FuncName = builder.CreateGlobalStringPtr(i_call->getCalledFunction()->getName());
           llvm::Value *FormatStrPtr =
             builder.CreatePointerCast(PrintfFormatStrVar, PrintfArgTy, "formatStr");
-          
+
           //load global variable
-          auto load = builder.CreateLoad(g_var, "load_g_var");
+          //auto load = builder.CreateLoad(g_var, "load_g_var");
+          //load head->a
+          auto h = builder.CreateLoad(head_var, "h");
+          auto ha = builder.CreateGEP(h, {builder.getInt32(0), builder.getInt32(0)}, "ha");
+          ha = builder.CreateLoad(ha, "haa");
           builder.CreateCall(
-            Printf, {FormatStrPtr, FuncName, builder.getInt32(line), load});
+            Printf, {FormatStrPtr, FuncName, builder.getInt32(line), ha});
           injectedAtLeastOnce = true;
         }
       }
