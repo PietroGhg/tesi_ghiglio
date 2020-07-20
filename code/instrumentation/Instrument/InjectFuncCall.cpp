@@ -14,7 +14,6 @@ FunctionCallee createPrintStack(LLVMContext& CTX, Module& M){
   IRBuilder<> builder(CTX);
 
   GlobalVariable* head_var = M.getNamedGlobal("stack_head");
-  if(!head_var) errs()<< "ok\n";
   
   llvm::Constant *PrintfFormatStr = llvm::ConstantDataArray::getString(
       CTX, "Hello from basic block: %d\n\texecuted from line: %d\n");
@@ -46,6 +45,50 @@ FunctionCallee createPrintStack(LLVMContext& CTX, Module& M){
   return std::move(print_stack);
 }
 
+FunctionCallee createPush(LLVMContext& CTX, Module& M){
+  IRBuilder<> builder(CTX);
+  GlobalVariable* head_var = M.getNamedGlobal("stack_head");
+  FunctionType* push_ty = FunctionType::get(Type::getVoidTy(CTX),
+                                           Type::getInt32Ty(CTX),
+                                           false);
+  FunctionCallee push = M.getOrInsertFunction("push", push_ty);
+  Function* pushF = dyn_cast<Function>(push.getCallee());
+  BasicBlock* bb = BasicBlock::Create(CTX, "push_bb", pushF);
+  builder.SetInsertPoint(bb);
+  //allocate space for temp on the stack
+  auto alloca_temp = builder.CreateAlloca(head_var->getType()->getElementType(), nullptr, "alloca_temp");
+  //load head
+  auto load_head = builder.CreateLoad(head_var, "load_head");
+  //allocate memory for the new stack element
+  auto head_type = dyn_cast<PointerType>(head_var->getType()->getElementType());
+  auto alloc_type = head_type->getElementType();
+  errs() << "head_var->getType() " << *(head_var->getType()) << "\n";
+  errs() << "head_type: " << *head_type << "\n";
+  errs() << "alloc_type: " << *alloc_type << "\n";
+  auto malloc_temp = CallInst::CreateMalloc(load_head, 
+                                            Type::getInt64Ty(CTX),
+                                            head_type->getPointerElementType(),
+                                            ConstantExpr::getSizeOf(alloc_type),
+                                            nullptr,
+                                            nullptr,
+                                            "malloc_temp");
+  
+  builder.SetInsertPoint(bb);
+  builder.CreateStore(malloc_temp, alloca_temp, false);
+  //temp->a = line
+  auto load_temp = builder.CreateLoad(alloca_temp, "load_temp");
+  auto tempa = builder.CreateGEP(load_temp, {builder.getInt32(0), builder.getInt32(0)}, "temp-a");
+  builder.CreateStore(pushF->getArg(0), tempa);
+  //temp->prev = head
+  auto temp_prev = builder.CreateGEP(load_temp, {builder.getInt32(0), builder.getInt32(1)}, "temp-prev");
+  builder.CreateStore(load_head, temp_prev, false);
+  //head = temp
+  builder.CreateStore(load_temp, head_var, false);
+  builder.CreateRet(nullptr);
+
+  return std::move(push);
+}
+
 //-----------------------------------------------------------------------------
 // InjectFuncCall implementation
 //-----------------------------------------------------------------------------
@@ -74,7 +117,7 @@ bool InjectFuncCall::runOnModule(Module &M) {
   auto malloc_call = CallInst::CreateMalloc(I, 
                                             Type::getInt64Ty(CTX),
                                             s_pointer_type->getPointerElementType(),
-                                            builder.getInt64(16),
+                                            ConstantExpr::getSizeOf(s_type),
                                             nullptr,
                                             nullptr,
                                             "malloc_head");
@@ -105,12 +148,13 @@ bool InjectFuncCall::runOnModule(Module &M) {
   PrintfF->addParamAttr(0, Attribute::NoCapture);
   PrintfF->addParamAttr(0, Attribute::ReadOnly);
 
-  //definition of print_stack: void print_stack(int bb_id)
+  
   FunctionCallee print_stack = createPrintStack(CTX, M);
+  FunctionCallee push = createPush(CTX, M);
 
 
   for (auto &F : M) {
-    if (F.isDeclaration() || F.getName() == "print_stack")
+    if (F.isDeclaration() || F.getName() == "print_stack" || F.getName() == "push")
       continue;
 
     for(auto& bb : F){
