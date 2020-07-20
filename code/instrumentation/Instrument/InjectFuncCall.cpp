@@ -16,7 +16,7 @@ FunctionCallee createPrintStack(LLVMContext& CTX, Module& M){
   GlobalVariable* head_var = M.getNamedGlobal("stack_head");
   
   llvm::Constant *PrintfFormatStr = llvm::ConstantDataArray::getString(
-      CTX, "Hello from basic block: %d\n\texecuted from line: %d\n");
+      CTX, "Executing basic block: %d\tfrom line: %d\n");
   Constant *PrintfFormatStrVar =
       M.getOrInsertGlobal("PrintfFormatStr", PrintfFormatStr->getType());
   dyn_cast<GlobalVariable>(PrintfFormatStrVar)->setInitializer(PrintfFormatStr);
@@ -62,9 +62,7 @@ FunctionCallee createPush(LLVMContext& CTX, Module& M){
   //allocate memory for the new stack element
   auto head_type = dyn_cast<PointerType>(head_var->getType()->getElementType());
   auto alloc_type = head_type->getElementType();
-  errs() << "head_var->getType() " << *(head_var->getType()) << "\n";
-  errs() << "head_type: " << *head_type << "\n";
-  errs() << "alloc_type: " << *alloc_type << "\n";
+
   auto malloc_temp = CallInst::CreateMalloc(load_head, 
                                             Type::getInt64Ty(CTX),
                                             head_type->getPointerElementType(),
@@ -87,6 +85,38 @@ FunctionCallee createPush(LLVMContext& CTX, Module& M){
   builder.CreateRet(nullptr);
 
   return std::move(push);
+}
+
+FunctionCallee createPop(LLVMContext& CTX, Module& M){
+  IRBuilder<> builder(CTX);
+  GlobalVariable* head_var = M.getNamedGlobal("stack_head");
+  FunctionType* pop_ty = FunctionType::get(Type::getVoidTy(CTX),
+                                          false);
+  FunctionCallee pop = M.getOrInsertFunction("pop", pop_ty);
+  Function* popF = dyn_cast<Function>(pop.getCallee());
+  BasicBlock* bb = BasicBlock::Create(CTX, "pop_bb", popF);
+  builder.SetInsertPoint(bb);
+
+  auto alloca_temp = builder.CreateAlloca(head_var->getType()->getPointerElementType(), nullptr, "alloca_temp");
+  //temp = head
+  auto load_head = builder.CreateLoad(head_var, "load-head");
+  builder.CreateStore(load_head, alloca_temp);
+  //head = head -> prev
+  auto h_prev_ptr = builder.CreateGEP(load_head, {builder.getInt32(0), builder.getInt32(1)}, "h_prev_ptr");
+  auto h_prev = builder.CreateLoad(h_prev_ptr, "h_prev");
+  builder.CreateStore(h_prev, head_var);
+  //free(temp)
+  auto load_temp = builder.CreateLoad(alloca_temp, "load_temp");
+  auto ret = builder.CreateRet(nullptr);
+  CallInst::CreateFree(load_temp, ret);
+  
+
+  return std::move(pop);
+}
+
+bool isInjected(Function* f){
+  auto name = f->getName();
+  return name == "pop" || name == "push" || name == "print_stack";
 }
 
 //-----------------------------------------------------------------------------
@@ -151,10 +181,11 @@ bool InjectFuncCall::runOnModule(Module &M) {
   
   FunctionCallee print_stack = createPrintStack(CTX, M);
   FunctionCallee push = createPush(CTX, M);
+  FunctionCallee pop = createPop(CTX, M);
 
 
   for (auto &F : M) {
-    if (F.isDeclaration() || F.getName() == "print_stack" || F.getName() == "push")
+    if (F.isDeclaration() || isInjected(&F))
       continue;
 
     for(auto& bb : F){
@@ -169,8 +200,16 @@ bool InjectFuncCall::runOnModule(Module &M) {
         
       for(auto& i : bb){
         if(isa<CallInst>(i) && i.getDebugLoc() && !isa<DbgInfoIntrinsic>(i)){
+          //check if it is a call to an injected function
+          CallInst* c_inst = dyn_cast<CallInst>(&i);
+          if(isInjected(c_inst->getCalledFunction()))
+            continue;
+          //else
+          auto line = i.getDebugLoc().getLine();
           //before performing the call, push a new line on the stack
+          CallInst::Create(push, {builder.getInt32(line)}, None, "", &i);
           //after performing the call, pop from the stack
+          CallInst::Create(pop, "", i.getNextNode());
 
           injectedAtLeastOnce = true;
         }

@@ -1,16 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int g(int n){
+  return n*n;
+}
+
 int f(int a, int b){
-  if(a > b){
-        a = a + b;
-  }
-  else{
-    a = a * b;
-  }
-  return a;
+  int c = g(a);
+  int d = g(b);
+  return c + d;
 }
 
 int main(){
-    printf("%d", f(rand(), rand()));
+  f(10,20);
+  f(30,40);
 }
