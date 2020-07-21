@@ -5,6 +5,7 @@
 #include "llvm/Passes/PassBuilder.h"
 
 #include "llvm/IR/GlobalValue.h" //global variable linkage types
+#include "llvm/Transforms/Utils/ModuleUtils.h"
 
 using namespace llvm;
 
@@ -190,7 +191,11 @@ bool InjectFuncCall::runOnModule(Module &M) {
   auto h1 = builder.CreateLoad(head_var, "h1");   //load head
   auto ha1 = builder.CreateGEP(h1, {builder.getInt32(0),builder.getInt32(0)}, "ha"); //get pointer to head->a
   auto sa1 = builder.CreateStore(builder.getInt32(0), ha1); //TODO: set actual line of main
-  //TODO: inject a call to pop to clear the stack
+  //head->prev = NULL;
+  auto h_prev_ptr = builder.CreateGEP(h1, {builder.getInt32(0), builder.getInt32(1)}, "h_prev_ptr");
+  auto head_type = dyn_cast<PointerType>(head_var->getType()->getElementType());
+  auto null_val = Constant::getNullValue(head_type);
+  builder.CreateStore(null_val, h_prev_ptr);
   
 
 
@@ -218,6 +223,9 @@ bool InjectFuncCall::runOnModule(Module &M) {
   FunctionCallee print_stack = createPrintStack(CTX, M);
   FunctionCallee push = createPush(CTX, M);
   FunctionCallee pop = createPop(CTX, M);
+
+  //inject a call to pop to clear the stack
+  appendToGlobalDtors(M, dyn_cast<Function>(pop.getCallee()), 0);
 
 
   for (auto &F : M) {
