@@ -15,14 +15,23 @@ FunctionCallee createPrintStack(LLVMContext& CTX, Module& M){
 
   GlobalVariable* head_var = M.getNamedGlobal("stack_head");
   
-  llvm::Constant *PrintfFormatStr = llvm::ConstantDataArray::getString(
-      CTX, "Executing basic block: %d\tfrom line: %d\n");
-  Constant *PrintfFormatStrVar =
-      M.getOrInsertGlobal("PrintfFormatStr", PrintfFormatStr->getType());
-  dyn_cast<GlobalVariable>(PrintfFormatStrVar)->setInitializer(PrintfFormatStr);
+  //format string for the basick block id
+  llvm::Constant *bb_id_str = llvm::ConstantDataArray::getString(
+      CTX, "Executing basic block: %d\n");
+  Constant *bb_id_str_var =
+      M.getOrInsertGlobal("bb_id_str", bb_id_str->getType());
+  dyn_cast<GlobalVariable>(bb_id_str_var)->setInitializer(bb_id_str);
 
-  Function* Printf = M.getFunction("printf");
-  auto PrintfArgTy = Printf->getFunctionType()->params()[0];
+  //format string for the line number[s]
+  llvm::Constant *line_num_str = llvm::ConstantDataArray::getString(
+      CTX, "\tline: %d\n");
+  Constant *line_num_str_var =
+      M.getOrInsertGlobal("line_num_str", line_num_str->getType());
+  dyn_cast<GlobalVariable>(line_num_str_var)->setInitializer(line_num_str);
+
+  Function* printf = M.getFunction("printf");
+  auto printf_ty = printf->getFunctionType();
+  auto printf_arg_ty = printf_ty->params()[0];
   
 
   FunctionType* print_stack_ty = FunctionType::get(Type::getVoidTy(CTX),
@@ -30,17 +39,42 @@ FunctionCallee createPrintStack(LLVMContext& CTX, Module& M){
                                                   false);
   FunctionCallee print_stack = M.getOrInsertFunction("print_stack", print_stack_ty);
   Function* print_stackF = dyn_cast<Function>(print_stack.getCallee());
-  //TODO: attributes?
+
   BasicBlock* bb1 = BasicBlock::Create(CTX, "print_stack_bb1", print_stackF);
+  BasicBlock* bb2 = BasicBlock::Create(CTX, "print_stack_bb2", print_stackF);
+  BasicBlock* bb3 = BasicBlock::Create(CTX, "print_stack_bb3", print_stackF);
+
   builder.SetInsertPoint(bb1);
-  auto i = builder.CreateLoad(head_var, "load_head");
-  auto i2 = builder.CreateGEP(i, {builder.getInt32(0), builder.getInt32(0)}, "ha_ref");
-  auto i3 = builder.CreateLoad(i2, "load_ha");
-  llvm::Value *FormatStrPtr =
-      builder.CreatePointerCast(PrintfFormatStrVar, PrintfArgTy, "formatStr");
-  builder.CreateCall(
-      Printf, {FormatStrPtr, print_stackF->getArg(0), i3});
+  //print basick block id
+  llvm::Value *bb_id_ptr =
+      builder.CreatePointerCast(bb_id_str_var, printf_arg_ty, "formatStr");
+  builder.CreateCall(printf_ty, printf, {bb_id_ptr, print_stackF->getArg(0)}, "print_bb_id");
+  auto load_head = builder.CreateLoad(head_var, "load_head");
+  auto head_type = dyn_cast<PointerType>(head_var->getType()->getElementType());
+  auto null_val = Constant::getNullValue(head_type);
+  auto cmp1 = builder.CreateICmpEQ(load_head, null_val, "cmp1");
+  builder.CreateCondBr(cmp1, bb3, bb2);
+
+  builder.SetInsertPoint(bb2);
+  auto phi = builder.CreatePHI(head_type, 2); //phi node for temp
+  phi->addIncoming(load_head, bb1);
+  //print temp->line
+  auto temp_line_ptr = builder.CreateGEP(phi, {builder.getInt32(0), builder.getInt32(0)}, "temp_line_ptr");
+  auto temp_line = builder.CreateLoad(temp_line_ptr, "temp_line");
+  llvm::Value *line_num_ptr =
+      builder.CreatePointerCast(line_num_str_var, printf_arg_ty, "formatStr");
+  builder.CreateCall(printf_ty, printf, {line_num_ptr, temp_line}, "print_bb_id");
+  //temp = temp->prev
+  auto t_prev_ptr = builder.CreateGEP(phi, {builder.getInt32(0), builder.getInt32(1)}, "t_prev_ptr");
+  auto t_prev = builder.CreateLoad(t_prev_ptr, "t_prev");
+  phi->addIncoming(t_prev, bb2);
+  auto cmp2 = builder.CreateICmpEQ(t_prev, null_val, "cmp2");
+  builder.CreateCondBr(cmp2, bb3, bb2);
+
+
+  builder.SetInsertPoint(bb3);
   builder.CreateRet(nullptr);
+
 
   return std::move(print_stack);
 }
@@ -155,7 +189,9 @@ bool InjectFuncCall::runOnModule(Module &M) {
   auto st = builder.CreateStore(malloc_call, head_var, false);
   auto h1 = builder.CreateLoad(head_var, "h1");   //load head
   auto ha1 = builder.CreateGEP(h1, {builder.getInt32(0),builder.getInt32(0)}, "ha"); //get pointer to head->a
-  auto sa1 = builder.CreateStore(builder.getInt32(42), ha1); //TODO: set actual line of main
+  auto sa1 = builder.CreateStore(builder.getInt32(0), ha1); //TODO: set actual line of main
+  //TODO: inject a call to pop to clear the stack
+  
 
 
   bool injectedAtLeastOnce = false;
