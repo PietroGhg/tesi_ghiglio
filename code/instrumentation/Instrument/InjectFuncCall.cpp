@@ -11,6 +11,41 @@ using namespace llvm;
 
 #define DEBUG_TYPE "inject-func-call"
 
+FunctionCallee createInit(LLVMContext& CTX, Module& M){
+  IRBuilder<> builder(CTX);
+
+  GlobalVariable* head_var = M.getNamedGlobal("stack_head");
+  auto malloc_cast_ty = head_var->getType()->getElementType();
+  auto malloc_ty = dyn_cast<PointerType>(malloc_cast_ty)->getElementType();
+
+  FunctionType* init_ty = FunctionType::get(builder.getVoidTy(), false);
+  FunctionCallee init = M.getOrInsertFunction("init", init_ty);
+  Function* initF = dyn_cast<Function>(init.getCallee());
+  BasicBlock* bb = BasicBlock::Create(CTX, "init_bb", initF);
+
+  builder.SetInsertPoint(bb);
+  auto ret = builder.CreateRet(nullptr);
+  auto malloc_call = CallInst::CreateMalloc(ret, 
+                                            Type::getInt64Ty(CTX),
+                                            malloc_cast_ty->getPointerElementType(),
+                                            ConstantExpr::getSizeOf(malloc_ty),
+                                            nullptr,
+                                            nullptr,
+                                            "malloc_head");
+  builder.SetInsertPoint(ret); //since IRBuilder doesn't have createMalloc
+  auto st = builder.CreateStore(malloc_call, head_var, false);
+  auto h1 = builder.CreateLoad(head_var, "h1");   //load head
+  auto ha1 = builder.CreateGEP(h1, {builder.getInt32(0),builder.getInt32(0)}, "ha"); //get pointer to head->a
+  auto sa1 = builder.CreateStore(builder.getInt32(0), ha1); //TODO: set actual line of main
+  //head->prev = NULL;
+  auto h_prev_ptr = builder.CreateGEP(h1, {builder.getInt32(0), builder.getInt32(1)}, "h_prev_ptr");
+  auto head_type = dyn_cast<PointerType>(head_var->getType()->getElementType());
+  auto null_val = Constant::getNullValue(head_type);
+  builder.CreateStore(null_val, h_prev_ptr);
+
+  return std::move(init);
+}
+
 FunctionCallee createPrintStack(LLVMContext& CTX, Module& M){
   IRBuilder<> builder(CTX);
 
@@ -151,7 +186,7 @@ FunctionCallee createPop(LLVMContext& CTX, Module& M){
 
 bool isInjected(Function* f){
   auto name = f->getName();
-  return name == "pop" || name == "push" || name == "print_stack";
+  return name == "pop" || name == "push" || name == "print_stack" || name == "init";
 }
 
 //-----------------------------------------------------------------------------
@@ -179,23 +214,7 @@ bool InjectFuncCall::runOnModule(Module &M) {
 
 
   //inject call to malloc at the beginning of the main function
-  auto malloc_call = CallInst::CreateMalloc(I, 
-                                            Type::getInt64Ty(CTX),
-                                            s_pointer_type->getPointerElementType(),
-                                            ConstantExpr::getSizeOf(s_type),
-                                            nullptr,
-                                            nullptr,
-                                            "malloc_head");
-  builder.SetInsertPoint(malloc_call->getNextNode()); //since IRBuilder doesn't have createMalloc
-  auto st = builder.CreateStore(malloc_call, head_var, false);
-  auto h1 = builder.CreateLoad(head_var, "h1");   //load head
-  auto ha1 = builder.CreateGEP(h1, {builder.getInt32(0),builder.getInt32(0)}, "ha"); //get pointer to head->a
-  auto sa1 = builder.CreateStore(builder.getInt32(0), ha1); //TODO: set actual line of main
-  //head->prev = NULL;
-  auto h_prev_ptr = builder.CreateGEP(h1, {builder.getInt32(0), builder.getInt32(1)}, "h_prev_ptr");
-  auto head_type = dyn_cast<PointerType>(head_var->getType()->getElementType());
-  auto null_val = Constant::getNullValue(head_type);
-  builder.CreateStore(null_val, h_prev_ptr);
+  
   
 
 
@@ -219,13 +238,15 @@ bool InjectFuncCall::runOnModule(Module &M) {
   PrintfF->addParamAttr(0, Attribute::NoCapture);
   PrintfF->addParamAttr(0, Attribute::ReadOnly);
 
-  
+  FunctionCallee init = createInit(CTX, M);
   FunctionCallee print_stack = createPrintStack(CTX, M);
   FunctionCallee push = createPush(CTX, M);
   FunctionCallee pop = createPop(CTX, M);
 
   //inject a call to pop to clear the stack
   appendToGlobalDtors(M, dyn_cast<Function>(pop.getCallee()), 0);
+  //inject call to init to allocate memory for stack head
+  appendToGlobalCtors(M, dyn_cast<Function>(init.getCallee()), 0);
 
 
   for (auto &F : M) {
@@ -234,10 +255,8 @@ bool InjectFuncCall::runOnModule(Module &M) {
 
     for(auto& bb : F){
         //instrument basic block in order to print stack at the beginning of its execution
-        if(F.getName() != "main")
-          builder.SetInsertPoint(&*(bb.getFirstInsertionPt()));
-        else
-          builder.SetInsertPoint(sa1->getNextNode());
+        builder.SetInsertPoint(&*(bb.getFirstInsertionPt()));
+
         //inject a call to print_stack(bb_count)
         builder.CreateCall(print_stack, {builder.getInt32(bb_count)});
         bb_count++;
