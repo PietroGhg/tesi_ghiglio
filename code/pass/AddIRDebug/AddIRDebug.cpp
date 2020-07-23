@@ -27,7 +27,9 @@ struct AddIRDebug : public ModulePass {
   bool runOnModule(Module& M) override {
     unsigned line_count = 0;
     for(auto& f : M.getFunctionList()){  
+      errs() << f.getName() << "\n";
       for(auto& bb : f.getBasicBlockList()){
+        errs() << bb.getName() << "\n";
         for(auto& i : bb.getInstList()){
           if(auto loc = i.getDebugLoc()){
             new_loc = DebugLoc::get(line_count, 0, loc.getScope(), loc.getInlinedAt(), loc.isImplicitCode());

@@ -1,5 +1,5 @@
+//to run: opt -load=./Instrument.so -legacy-inject-func-call test2.ll -S  > new.ll
 #include "InjectFuncCall.h"
-
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Passes/PassBuilder.h"
@@ -53,17 +53,24 @@ FunctionCallee createPrintStack(LLVMContext& CTX, Module& M){
   
   //format string for the basick block id
   llvm::Constant *bb_id_str = llvm::ConstantDataArray::getString(
-      CTX, "Executing basic block: %d\n");
+      CTX, "%d");
   Constant *bb_id_str_var =
       M.getOrInsertGlobal("bb_id_str", bb_id_str->getType());
   dyn_cast<GlobalVariable>(bb_id_str_var)->setInitializer(bb_id_str);
 
   //format string for the line number[s]
   llvm::Constant *line_num_str = llvm::ConstantDataArray::getString(
-      CTX, "\tline: %d\n");
+      CTX, " %d");
   Constant *line_num_str_var =
       M.getOrInsertGlobal("line_num_str", line_num_str->getType());
   dyn_cast<GlobalVariable>(line_num_str_var)->setInitializer(line_num_str);
+
+  //format string for the new line
+  llvm::Constant *new_line_str = llvm::ConstantDataArray::getString(
+      CTX, "\n");
+  Constant *new_line_str_var =
+      M.getOrInsertGlobal("new_line_str", new_line_str->getType());
+  dyn_cast<GlobalVariable>(new_line_str_var)->setInitializer(new_line_str);
 
   Function* printf = M.getFunction("printf");
   auto printf_ty = printf->getFunctionType();
@@ -109,6 +116,10 @@ FunctionCallee createPrintStack(LLVMContext& CTX, Module& M){
 
 
   builder.SetInsertPoint(bb3);
+  //print new line
+  llvm::Value *new_line_ptr =
+      builder.CreatePointerCast(new_line_str_var, printf_arg_ty, "formatStr");
+  builder.CreateCall(printf_ty, printf, {new_line_ptr}, "print_new_line");
   builder.CreateRet(nullptr);
 
 
@@ -211,9 +222,6 @@ bool InjectFuncCall::runOnModule(Module &M) {
   head_var->setConstant(false);
   head_var->setLinkage(GlobalValue::InternalLinkage);
   head_var->setInitializer(ConstantPointerNull::get(s_pointer_type));
-
-
-  //inject call to malloc at the beginning of the main function
   
   
 
