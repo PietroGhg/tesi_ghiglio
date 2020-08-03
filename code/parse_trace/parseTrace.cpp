@@ -6,6 +6,8 @@
 #include "boost/algorithm/string.hpp" //string split
 #include "algorithm" //std::transform
 #include "fstream" //ifstream
+#include <set>
+#include "callGraph.hpp"
 using namespace llvm;
 
 class BBTrace{
@@ -80,7 +82,9 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec, const 
             if(auto loc = i.getDebugLoc()){
                 ic[loc.getLine()]++;
             }
-            for(auto line : bbt.getLines()){
+            auto lines = bbt.getLines();
+            std::set<int> lines_set(lines.begin(), lines.end());
+            for(auto line : lines_set){
                 ic[line]++;
             }
         }
@@ -98,7 +102,13 @@ int main(int argc, char* argv[]){
         errs() << "error while opening .ll file\n";
         return -1;
     }
-    auto bb_trace_vec = getBBTraceVec(argv[2]);
+    auto cg = makeCallGraph(m.get());
+    printCG(cg);
+    
+    
+    
+    
+    /*auto bb_trace_vec = getBBTraceVec(argv[2]);
     auto bb_vec = getBBvec(m.get());
     std::ifstream source(argv[3]);
     if(!source.is_open()){
@@ -119,6 +129,6 @@ int main(int argc, char* argv[]){
         }
         i++;
     }
-    errs() << "total: " << ic[0] << "\n";
+    errs() << "total: " << ic[0] << "\n";*/
 
 }
