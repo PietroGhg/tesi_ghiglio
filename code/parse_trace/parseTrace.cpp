@@ -75,17 +75,33 @@ int getNumLines(std::ifstream& source){
     return ris;
 }
 
-std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec, const std::vector<BasicBlock*>& bbVec){
+std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec, 
+                       const std::vector<BasicBlock*>& bbVec,
+                       CallGraph& cg){
     std::vector<int> ic(num_lines+1);
+    auto main_node = getMainNode(cg);
+    size_t curr_node = main_node;
+    
+
     for(auto bbt : bbTvec){
         for(auto& i : *bbVec[bbt.getBBid()]){
             if(auto loc = i.getDebugLoc()){
                 ic[loc.getLine()]++;
             }
             auto lines = bbt.getLines();
-            std::set<int> lines_set(lines.begin(), lines.end());
-            for(auto line : lines_set){
-                ic[line]++;
+            resetReached(cg);
+            curr_node = main_node;
+            for(auto line_it = lines.rbegin(); line_it != lines.rend(); line_it++){
+                if(!cg[curr_node].reached){
+                    ic[*line_it]++;
+                    cg[curr_node].reached = true;
+                }
+                
+                //move to next node in call graph
+                if(line_it != lines.rend() - 1){
+                    curr_node = getNextNode(cg, curr_node, *std::next(line_it));
+                }
+                
             }
         }
     }
@@ -108,7 +124,7 @@ int main(int argc, char* argv[]){
     
     
     
-    /*auto bb_trace_vec = getBBTraceVec(argv[2]);
+    auto bb_trace_vec = getBBTraceVec(argv[2]);
     auto bb_vec = getBBvec(m.get());
     std::ifstream source(argv[3]);
     if(!source.is_open()){
@@ -116,19 +132,19 @@ int main(int argc, char* argv[]){
         return -1;
     }
     int num_lines = getNumLines(source);
-    auto ic = getIC(num_lines, bb_trace_vec, bb_vec);
+    auto ic = getIC(num_lines, bb_trace_vec, bb_vec, cg);
 
     std::string line;
     int i = 1;
     while(getline(source, line)){
         if(ic[i] != 0){
-            errs() << i << ": " << line << " //" << ic[i] << "llvm instr\n";
+            errs() << i << ": " << line << " //" << ic[i] << " llvm instr\n";
         }
         else{
             errs() << i << ": " << line << "\n";
         }
         i++;
     }
-    errs() << "total: " << ic[0] << "\n";*/
+    errs() << "total: " << ic[0] << "\n";
 
 }

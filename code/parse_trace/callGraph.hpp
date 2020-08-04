@@ -10,22 +10,32 @@ using namespace boost;
 
 struct VertexData {
     Function* f;
+    bool reached;
 };
 
 using callsite_t = unsigned int;
 
 struct EdgeData {
     callsite_t callsite;
+    bool recursive;
 };
 
+/** Data type for a graph that represents the function calls at source code level:
+ * each node corresponds to a function
+ * each edge corresponds to a callsite in the source code, labeled with the callsite information.
+ */
 typedef adjacency_list<vecS, 
 		       vecS,
 		       bidirectionalS,
 		       VertexData,
 		       EdgeData> CallGraph;
+using edge_t = boost::graph_traits<CallGraph>::edge_descriptor;
+using vertex_t = boost::graph_traits<CallGraph>::vertex_descriptor;
 
-using nodemap_t= std::map<Function*, int>;
+//! data type for the map from a function to its vertex descriptor in the call graph
+using nodemap_t = std::map<Function*, vertex_t>;
 
+//! function that creates an entry in the map for each function in the module
 nodemap_t makeNodeMap(Module* M){
     nodemap_t res;
     int i = 0;
@@ -39,11 +49,42 @@ nodemap_t makeNodeMap(Module* M){
     return std::move(res);
 }
 
+/**function that checks if the function call corresponding to the given edge leads
+ * to a call to the function correspoding to the source.
+ */
+bool isRecursive(CallGraph& cg, edge_t edge, vertex_t source, std::set<edge_t> edges){
+    if(target(edge,cg) == source){
+        return true;
+    }
+    bool is_rec = false;
+    auto tgt = target(edge,cg);
+    for(auto e : make_iterator_range(out_edges(tgt, cg))){
+        if(edges.insert(e).second){
+            is_rec = is_rec || isRecursive(cg, e, source, edges);
+        }
+        else{
+            return false;
+        }
+    }
+    return is_rec;
+}
+
+/** function that sets the recursive attribute in the edges of the call graph
+ */
+void setRecursive(CallGraph& cg){
+    for(auto e : make_iterator_range(edges(cg))){
+        std::set<edge_t> explored_edges;
+        explored_edges.insert(e);
+        cg[e].recursive = isRecursive(cg, e, source(e,cg), explored_edges);
+    }
+}
+
 CallGraph makeCallGraph(Module* M){
     auto nm = makeNodeMap(M);
     CallGraph res(nm.size());
     for(auto el : nm){
         res[el.second].f = el.first;
+        res[el.second].reached = false;
     }
     
 
@@ -62,22 +103,56 @@ CallGraph makeCallGraph(Module* M){
                             res[e.first].callsite = loc.getLine();
                         }
                         else{
-                            errs() << "no debug locations\n";
+                            errs() << "no debug location for instruction " << i << "\n";
                         }
                     }
                 }
             }
         }
     }
+    setRecursive(res);
     return std::move(res);
 }
 
-void printCG(CallGraph& cg){
+void printCG(const CallGraph& cg){
     for(auto v : make_iterator_range(vertices(cg))){
         errs() << cg[v].f->getName() << ": ";
         for(auto e : make_iterator_range(out_edges(v, cg))){
-            errs() << cg[target(e, cg)].f->getName() << " at location: " << cg[e].callsite << ", ";
+            errs() << cg[target(e, cg)].f->getName() << " loc: " << cg[e].callsite;
+            errs() << " rec: " << cg[e].recursive << " ";
         }
         errs() << "\n";
+    }
+}
+
+vertex_t getMainNode(const CallGraph& cg){
+    vertex_t res;
+    bool found = false;
+    for(auto v : make_iterator_range(vertices(cg))){
+        if(cg[v].f->getName() == "main"){
+            return v;
+        }
+    }
+
+    errs() << "no main function\n";
+    throw;
+}
+
+vertex_t getNextNode(const CallGraph& cg, const size_t curr_node, const callsite_t callsite){
+    vertex_t res;
+    for(auto e : make_iterator_range(out_edges(curr_node, cg))){
+        if(cg[e].callsite == callsite){
+            return target(e, cg);
+        }
+    }
+    errs() << "error while computing next node\n";
+    errs() << "from node: " << cg[curr_node].f->getName();
+    errs() << " callsite: " << callsite << "\n";
+    throw;
+}
+
+void resetReached(CallGraph& cg){
+    for(auto v : make_iterator_range(vertices(cg))){
+        cg[v].reached = false;
     }
 }
