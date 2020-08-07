@@ -10,7 +10,6 @@ using namespace boost;
 
 struct VertexData {
     Function* f;
-    bool reached;
 };
 
 using callsite_t = unsigned int;
@@ -18,6 +17,7 @@ using callsite_t = unsigned int;
 struct EdgeData {
     callsite_t callsite;
     bool recursive;
+    bool reached;
 };
 
 /** Data type for a graph that represents the function calls at source code level:
@@ -84,7 +84,6 @@ CallGraph makeCallGraph(Module* M){
     CallGraph res(nm.size());
     for(auto el : nm){
         res[el.second].f = el.first;
-        res[el.second].reached = false;
     }
     
 
@@ -101,6 +100,7 @@ CallGraph makeCallGraph(Module* M){
                         auto e = add_edge(nm[&f], nm[called], res);
                         if(auto loc = i.getDebugLoc()){
                             res[e.first].callsite = loc.getLine();
+                            res[e.first].reached = false;
                         }
                         else{
                             errs() << "no debug location for instruction " << i << "\n";
@@ -138,11 +138,11 @@ vertex_t getMainNode(const CallGraph& cg){
     throw;
 }
 
-vertex_t getNextNode(const CallGraph& cg, const size_t curr_node, const callsite_t callsite){
-    vertex_t res;
+edge_t getNextEdge(const CallGraph& cg, const size_t curr_node, const callsite_t callsite){
+    edge_t res;
     for(auto e : make_iterator_range(out_edges(curr_node, cg))){
         if(cg[e].callsite == callsite){
-            return target(e, cg);
+            return e;
         }
     }
     errs() << "error while computing next node\n";
@@ -152,7 +152,46 @@ vertex_t getNextNode(const CallGraph& cg, const size_t curr_node, const callsite
 }
 
 void resetReached(CallGraph& cg){
-    for(auto v : make_iterator_range(vertices(cg))){
-        cg[v].reached = false;
+    for(auto e : make_iterator_range(edges(cg))){
+        cg[e].reached = false;
     }
+}
+
+bool checkIncrease(const CallGraph& cg, edge_t in_edge){
+    if(!cg[in_edge].recursive){
+        return true;
+    }
+    vertex_t node = target(in_edge, cg);
+    for(auto e : make_iterator_range(in_edges(node, cg))){
+        if(cg[e].recursive && cg[e].reached){
+            return false;
+        }
+
+    }
+    return true;
+}
+
+std::set<callsite_t> getRecursiveCallSites(const CallGraph& cg){
+    std::set<callsite_t> res;
+    for(auto e : make_iterator_range(edges(cg))){
+        if(cg[e].recursive){
+            res.insert(cg[e].callsite);
+        }
+    }
+    for(auto el : res){
+        errs() << el << " ";
+    }
+    errs() << "\n";
+    return std::move(res);
+}
+
+edge_t getEdgeByCallsite(CallGraph& cg, callsite_t callsite){
+    for(auto e : make_iterator_range(edges(cg))){
+        if(cg[e].callsite == callsite){
+            return e;
+        }
+    }
+
+    errs() << "error while retrieving edge by callsite\n";
+    throw;
 }

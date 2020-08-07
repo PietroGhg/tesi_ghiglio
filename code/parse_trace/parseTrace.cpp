@@ -80,28 +80,47 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
                        CallGraph& cg){
     std::vector<int> ic(num_lines+1);
     auto main_node = getMainNode(cg);
-    size_t curr_node = main_node;
-    
+    auto rec_callsites = getRecursiveCallSites(cg);
+    vertex_t curr_node = main_node;
+    edge_t in_edge;
 
     for(auto bbt : bbTvec){
         for(auto& i : *bbVec[bbt.getBBid()]){
-            if(auto loc = i.getDebugLoc()){
-                ic[loc.getLine()]++;
-            }
-            auto lines = bbt.getLines();
             resetReached(cg);
             curr_node = main_node;
+            auto loc = i.getDebugLoc();
+            auto lines = bbt.getLines();
+            if(loc){
+                auto line = loc.getLine();
+                ic[line]++;
+                if(rec_callsites.find(line) != rec_callsites.end()){
+                    edge_t e = getEdgeByCallsite(cg, line);
+                    cg[e].reached = true;
+                }
+            }
+            
             for(auto line_it = lines.rbegin(); line_it != lines.rend(); line_it++){
-                if(!cg[curr_node].reached){
+                if(cg[curr_node].f->getName() == "main"){
                     ic[*line_it]++;
-                    cg[curr_node].reached = true;
+                }
+                else if(checkIncrease(cg, in_edge)){
+                    if(loc){
+                        if(loc.getLine() != cg[in_edge].callsite){
+                            ic[*line_it]++;
+                            cg[in_edge].reached = true;
+                        }
+                    }
+                    else{
+                        ic[*line_it]++;
+                        cg[in_edge].reached = true;
+                    }
                 }
                 
                 //move to next node in call graph
                 if(line_it != lines.rend() - 1){
-                    curr_node = getNextNode(cg, curr_node, *std::next(line_it));
+                    in_edge = getNextEdge(cg, curr_node, *std::next(line_it));
+                    curr_node = target(in_edge, cg);
                 }
-                
             }
         }
     }
@@ -109,7 +128,6 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
 }
 
 int main(int argc, char* argv[]){
-    //InitLLVM X(argc, argv);
     LLVMContext c;
 
     SMDiagnostic err;
