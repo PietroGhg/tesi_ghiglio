@@ -93,7 +93,7 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
             if(loc){
                 auto line = loc.getLine();
                 ic[line]++;
-                if(rec_callsites.find(line) != rec_callsites.end()){
+                if(isRecursive(cg, line, rec_callsites)){
                     edge_t e = getEdgeByCallsite(cg, line);
                     cg[e].reached = true;
                 }
@@ -103,19 +103,10 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
                 if(cg[curr_node].f->getName() == "main"){
                     ic[*line_it]++;
                 }
-                else if(checkIncrease(cg, in_edge)){
-                    if(loc){
-                        if(loc.getLine() != cg[in_edge].callsite){
-                            ic[*line_it]++;
-                            cg[in_edge].reached = true;
-                        }
-                    }
-                    else{
-                        ic[*line_it]++;
-                        cg[in_edge].reached = true;
-                    }
+                else if(checkIncrease2(cg, rec_callsites, *line_it, in_edge)){
+                    ic[*line_it]++;
+                    cg[in_edge].reached = true;
                 }
-                
                 //move to next node in call graph
                 if(line_it != lines.rend() - 1){
                     in_edge = getNextEdge(cg, curr_node, *std::next(line_it));

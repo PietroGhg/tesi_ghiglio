@@ -171,17 +171,38 @@ bool checkIncrease(const CallGraph& cg, edge_t in_edge){
     return true;
 }
 
-std::set<callsite_t> getRecursiveCallSites(const CallGraph& cg){
-    std::set<callsite_t> res;
-    for(auto e : make_iterator_range(edges(cg))){
-        if(cg[e].recursive){
-            res.insert(cg[e].callsite);
+bool isRecursive(const CallGraph& cg, callsite_t line, const std::set<edge_t>& rec_callsites){
+    for(auto el : rec_callsites){
+        if(cg[el].callsite == line){
+            return true;
         }
     }
-    for(auto el : res){
-        errs() << el << " ";
+    return false;
+}
+
+edge_t getEdge(const CallGraph& cg, const std::set<edge_t>& rec_callsites, callsite_t line){
+    for(auto el : rec_callsites){
+        if(cg[el].callsite == line){
+            return el;
+        }
     }
-    errs() << "\n";
+
+    errs() << "error while returning edge of a recursive callsite.\n";
+    errs() << "is it really recursive?\n";
+    throw;
+}
+
+bool checkIncrease2(const CallGraph& cg, const std::set<edge_t>& rec_callsites, callsite_t line, edge_t in_edge){
+    return !isRecursive(cg, line, rec_callsites);
+}
+
+std::set<edge_t> getRecursiveCallSites(const CallGraph& cg){
+    std::set<edge_t> res;
+    for(auto e : make_iterator_range(edges(cg))){
+        if(cg[e].recursive){
+            res.insert(e);
+        }
+    }
     return std::move(res);
 }
 
