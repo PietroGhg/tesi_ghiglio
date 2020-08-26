@@ -6,6 +6,9 @@ unsigned long fact(int n){
 }
 
 int main(){
-  fact(9);
-  fact(3);
+  int n = 10;
+  while(n > 0){
+    fact(n);
+    n--;
+  }
 }

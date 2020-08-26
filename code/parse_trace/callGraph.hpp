@@ -17,7 +17,6 @@ using callsite_t = unsigned int;
 struct EdgeData {
     callsite_t callsite;
     bool recursive;
-    bool reached;
 };
 
 /** Data type for a graph that represents the function calls at source code level:
@@ -100,7 +99,6 @@ CallGraph makeCallGraph(Module* M){
                         auto e = add_edge(nm[&f], nm[called], res);
                         if(auto loc = i.getDebugLoc()){
                             res[e.first].callsite = loc.getLine();
-                            res[e.first].reached = false;
                         }
                         else{
                             errs() << "no debug location for instruction " << i << "\n";
@@ -123,6 +121,30 @@ void printCG(const CallGraph& cg){
         }
         errs() << "\n";
     }
+}
+
+std::string vertDOT(const CallGraph& cg, vertex_t v){
+    return cg[v].f->getName();
+}
+
+std::string edgeDOT(const CallGraph& cg, edge_t e){
+    auto s = vertDOT(cg, source(e,cg));
+    auto t = vertDOT(cg, target(e,cg));
+    auto f = [](bool rec){ return rec ? "rec" : "not_rec";};
+    return s + " -> " + t + "[label = \"" + f(cg[e].recursive) + " line: " + std::to_string(cg[e].callsite) + "\"]";
+}
+
+std::string getDOT(const CallGraph& cg){
+    std::string res = "";
+    res += "digraph cg {\n";
+    for(auto v : make_iterator_range(vertices(cg))){
+        res += vertDOT(cg, v) + "\n";
+    }
+    for(auto e : make_iterator_range(edges(cg))){
+        res += edgeDOT(cg, e) + "\n";
+    }
+    res += "}";
+    return std::move(res);
 }
 
 vertex_t getMainNode(const CallGraph& cg){
@@ -151,25 +173,6 @@ edge_t getNextEdge(const CallGraph& cg, const size_t curr_node, const callsite_t
     throw;
 }
 
-void resetReached(CallGraph& cg){
-    for(auto e : make_iterator_range(edges(cg))){
-        cg[e].reached = false;
-    }
-}
-
-bool checkIncrease(const CallGraph& cg, edge_t in_edge){
-    if(!cg[in_edge].recursive){
-        return true;
-    }
-    vertex_t node = target(in_edge, cg);
-    for(auto e : make_iterator_range(in_edges(node, cg))){
-        if(cg[e].recursive && cg[e].reached){
-            return false;
-        }
-
-    }
-    return true;
-}
 
 bool isRecursive(const CallGraph& cg, callsite_t line, const std::set<edge_t>& rec_callsites){
     for(auto el : rec_callsites){
@@ -192,7 +195,7 @@ edge_t getEdge(const CallGraph& cg, const std::set<edge_t>& rec_callsites, calls
     throw;
 }
 
-bool checkIncrease2(const CallGraph& cg, const std::set<edge_t>& rec_callsites, callsite_t line, edge_t in_edge){
+bool checkIncrease(const CallGraph& cg, const std::set<edge_t>& rec_callsites, callsite_t line, edge_t in_edge){
     return !isRecursive(cg, line, rec_callsites);
 }
 
