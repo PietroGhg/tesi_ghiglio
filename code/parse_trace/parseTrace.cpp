@@ -10,6 +10,9 @@
 #include "callGraph.hpp"
 using namespace llvm;
 
+/**
+ * Class for the trace left by the execution of a single basic block
+ */
 class BBTrace{
 private:
     int bb_id;
@@ -38,6 +41,7 @@ raw_ostream& operator<<(raw_ostream& os, const BBTrace& bbt){
     return os;
 }
 
+//! Function that opens a trace file and returns a vector of the bbtraces contained in it
 std::vector<BBTrace> getBBTraceVec(std::string path){
     std::vector<BBTrace> result;
     std::ifstream f(path);
@@ -54,6 +58,7 @@ std::vector<BBTrace> getBBTraceVec(std::string path){
     return std::move(result);  
 }
 
+//! Function that returns a vector of all the basic blocks in the module
 std::vector<BasicBlock*> getBBvec(Module* m){
     std::vector<BasicBlock*> result;
     for(auto& f : *m){
@@ -75,9 +80,14 @@ int getNumLines(std::ifstream& source){
     return ris;
 }
 
+/**
+ * Function that computes the instruction count of each source code line
+ * Returns a vector s.t. at position i there's the instruction count associated to line i
+ */
 std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec, 
                        const std::vector<BasicBlock*>& bbVec,
-                       CallGraph& cg){
+                       CallGraph& cg,
+                       std::map<Function*, int>& unass){
     //TODO: this should carry also info about which function the line belongs to
     std::vector<int> ic(num_lines+1); 
     auto main_node = getMainNode(cg);
@@ -93,6 +103,9 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
             if(loc){
                 auto line = loc.getLine();
                 ic[line]++;
+            }
+            else{
+                unass[i.getParent()->getParent()]++;
             }
             
             for(auto line_it = lines.rbegin(); line_it != lines.rend(); line_it++){
@@ -135,7 +148,11 @@ int main(int argc, char* argv[]){
         return -1;
     }
     int num_lines = getNumLines(source);
-    auto ic = getIC(num_lines, bb_trace_vec, bb_vec, cg);
+    std::map<Function*, int> unass;
+    for(auto& f : *(m.get())){
+        unass.insert(std::pair<Function*, int>(&f, 0));
+    }
+    auto ic = getIC(num_lines, bb_trace_vec, bb_vec, cg, unass);
 
     std::string line;
     int i = 1;
@@ -149,4 +166,7 @@ int main(int argc, char* argv[]){
         i++;
     }
     errs() << "total: " << ic[0] << "\n";
+    for(auto el : unass){
+        errs() << el.first->getName() << " " << el.second << "\n";
+    }
 }

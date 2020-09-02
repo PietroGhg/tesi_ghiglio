@@ -70,6 +70,7 @@ int main(int argc, char* argv[]){
         i++;
     }
 
+    /*
     //Creates an MCContext given an object file.
     std::string Error;
     auto theTriple = Obj->makeTriple();
@@ -110,6 +111,7 @@ int main(int argc, char* argv[]){
             //DisAsm->getInstruction(info, Size, ????, addr.Address, errs());
         }
     }*/
+    
 
     
 }

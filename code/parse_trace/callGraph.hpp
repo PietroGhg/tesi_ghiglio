@@ -78,6 +78,7 @@ void setRecursive(CallGraph& cg){
     }
 }
 
+//! Function that builds a call graph by inspecting all the CallInst in a module
 CallGraph makeCallGraph(Module* M){
     auto nm = makeNodeMap(M);
     CallGraph res(nm.size());
@@ -160,6 +161,7 @@ vertex_t getMainNode(const CallGraph& cg){
     throw;
 }
 
+//! Function that returns the edge correspoding to the callsite given as parameter
 edge_t getNextEdge(const CallGraph& cg, const size_t curr_node, const callsite_t callsite){
     edge_t res;
     for(auto e : make_iterator_range(out_edges(curr_node, cg))){
@@ -173,7 +175,7 @@ edge_t getNextEdge(const CallGraph& cg, const size_t curr_node, const callsite_t
     throw;
 }
 
-
+//! Function that returns true if the given callsite corresponds to a recursive call
 bool isRecursive(const CallGraph& cg, callsite_t line, const std::set<edge_t>& rec_callsites){
     for(auto el : rec_callsites){
         if(cg[el].callsite == line){
@@ -183,6 +185,7 @@ bool isRecursive(const CallGraph& cg, callsite_t line, const std::set<edge_t>& r
     return false;
 }
 
+//! Function that returns the edge correspoding to a callsite, only if that callsite is recursive
 edge_t getEdge(const CallGraph& cg, const std::set<edge_t>& rec_callsites, callsite_t line){
     for(auto el : rec_callsites){
         if(cg[el].callsite == line){
@@ -195,6 +198,7 @@ edge_t getEdge(const CallGraph& cg, const std::set<edge_t>& rec_callsites, calls
     throw;
 }
 
+//! Function that checks wheter to assign or not the instruction count cost to a given callsite
 bool checkIncrease(const CallGraph& cg, const std::set<edge_t>& rec_callsites, callsite_t line, edge_t in_edge){
     return !isRecursive(cg, line, rec_callsites);
 }
