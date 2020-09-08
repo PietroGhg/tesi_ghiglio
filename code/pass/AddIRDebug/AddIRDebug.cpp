@@ -23,27 +23,38 @@ struct AddIRDebug : public ModulePass {
   DILocation* oldLoc;
   bool oldImplicit;
   DebugLoc new_loc;
-
+  DebugLoc curr_loc;
+  MDNode* scope;
+  DILocation* inlinedAt;
+  bool isImpilicitCode;
+  
   bool runOnModule(Module& M) override {
     unsigned line_count = 0;
     for(auto& f : M.getFunctionList()){  
       errs() << f.getName() << "\n";
+
+      //find the first debugloc;
+      for(auto& bb : f){
+	for(auto& i : bb){
+	  if(auto loc = i.getDebugLoc()){
+	    curr_loc = loc;
+	    break;
+	  }
+	}
+      }
+      
       for(auto& bb : f.getBasicBlockList()){
         errs() << bb.getName() << "\n";
         for(auto& i : bb.getInstList()){
           if(auto loc = i.getDebugLoc()){
-            new_loc = DebugLoc::get(line_count, 0, loc.getScope(), loc.getInlinedAt(), loc.isImplicitCode());
-            i.setDebugLoc(new_loc);   
-            errs() << i << " " << i.getDebugLoc().getLine() << "\n";                  
+	    curr_loc = loc;                 
           }
-          else{
-            //new_loc = DebugLoc::get(line_count, 0, oldScope, oldLoc, oldImplicit);   
-            //TODO: set location when previously not existant
-            errs() << i << " NO LOCATION \n";
-          }
-          
-           //IR/FixedMetadataKinds.def 
-          //errs() << i << " line: " << i.getDebugLoc().getLine() << "\n";
+	  new_loc = DebugLoc::get(line_count, 0,
+				  curr_loc.getScope(),
+				  curr_loc.getInlinedAt(),
+				  curr_loc.isImplicitCode());
+	  i.setDebugLoc(new_loc);   
+	  errs() << i << " " << i.getDebugLoc().getLine() << "\n"; 
           line_count++;
          }
         }

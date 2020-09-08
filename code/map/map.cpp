@@ -1,5 +1,3 @@
-// https://raywang.tech/2017/12/04/Using-the-LLVM-MC-Disassembly-API/
-
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/StringExtras.h"	//arrayRefFromStringRef
 #include "llvm/ADT/StringRef.h"
@@ -26,42 +24,8 @@
 
 using namespace llvm;
 using namespace object;
-using LinesAddr = std::vector<std::vector<SectionedAddress>>;
-using AddrLines = std::map<uint64_t, uint64_t>;
 
-std::pair<LinesAddr, AddrLines> getLinesMat(DWARFContext& DCtx)
-{
-	LinesAddr lines;
-	AddrLines addrlines;
 
-	auto units = DCtx.compile_units();
-	
-
-	for (auto& unit : units)
-	{	 // TODO: deal with multiple units
-		const DWARFDebugLine::LineTable* table =
-				DCtx.getLineTableForUnit(unit.get());
-		if (table)
-		{
-			int max = 0;
-			for (auto row : table->Rows)
-			  {
-				if (row.Line > max)
-					max = row.Line;
-			}
-			// matrix line x addresses
-			lines.resize(max + 1);
-			for (auto row : table->Rows)
-			{
-				lines[row.Line].push_back(row.Address);
-				addrlines[row.Address.Address] = row.Line;
-			}
-		}
-		else
-			errs() << "table is null\n";
-	}
-	return std::pair<LinesAddr, AddrLines>(lines, addrlines);
-}
 
 int main(int argc, char* argv[])
 {
@@ -139,9 +103,15 @@ int main(int argc, char* argv[])
 	//recover the symbols from .text
 	std::vector<SymbolRef> textSymbols = getTextSymbols(*Obj);
         
-	//for each function in the module, retrieve the corrisponding begin
-	//and end addresses in the assembly file
-	getFun(textSymbols, "main", *DisAsm, bytes).dump();
-	auto bb = getFun(textSymbols, "f", *DisAsm, bytes);
-	bb.dump();    
+
+	auto mainF = getFun(textSymbols, "main", *DisAsm, bytes);
+	sourceLoc lastLoc;
+	for(auto& i : mainF.getInstructions()){
+	  if(addrs.find(i.getAddr()) != addrs.end()){
+	    lastLoc = addrs[i.getAddr()];	    
+	  }
+	  i.setDebugLoc(lastLoc);
+	  i.dump();
+	  std::cout << "\n";
+	}
 }

@@ -4,26 +4,38 @@
 #include <sys/types.h>
 #include <vector>
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/DebugInfo/DWARF/DWARFContext.h"
 #include "llvm/MC/MCDisassembler/MCDisassembler.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/IR/Module.h"
+#include "llvm/DebugInfo/DWARF/DWARFDebugLine.h"
 #include <iostream>
+
+using LinesAddr = std::vector<std::vector<llvm::object::SectionedAddress>>;
+using AddrLines = std::map<uint64_t, uint64_t>;
+using sourceLoc = unsigned long;
 
 class ObjInstr{
 private:
   uint64_t addr;
   uint64_t size;
   llvm::MCInst inst;
+  sourceLoc debugLoc = 0; // 0 -> no debugLoc
 public:
   ObjInstr(uint64_t _addr, uint64_t _size, llvm::MCInst _inst):
     addr(_addr), size(_size), inst(_inst){}
   uint64_t getAddr(){ return addr; }
   uint64_t getSize() { return size; }
   llvm::MCInst getInst() { return std::move(inst); }
+  void setDebugLoc(sourceLoc _debugLoc) { debugLoc = _debugLoc; }
+  sourceLoc getDebugLoc() { return debugLoc; }
 
   void dump(){
-    std::cout << std::hex << "addr: " << addr << "\n";
+    std::cout << std::hex << "addr: " << addr << " ";
+    if(debugLoc){
+      std::cout << "debug: " << debugLoc <<  " ";
+    }
   }
 };
 
@@ -40,7 +52,10 @@ public:
   uint64_t getEnd() { return (instructions.end() - 1)->getAddr(); }
   void setBegin(uint64_t _begin){ begin = _begin; }
   void addInst(ObjInstr inst){ instructions.push_back(inst); }
-
+  std::vector<ObjInstr>& getInstructions(){
+    return instructions;
+  }
+    
   void dump(){
     std::cout << "name: " << name << "\n";
     std::cout << "begin: " << std::hex << begin
@@ -80,7 +95,7 @@ inline llvm::object::SectionRef getDotText(const llvm::object::ObjectFile& obj){
 inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
 			  std::string name,
 			  const llvm::MCDisassembler& DisAsm,
-			  llvm::ArrayRef<uint8_t> bytes){
+			  const llvm::ArrayRef<uint8_t>& bytes){
   ObjFunction res(name);
   for(auto it = symbols.begin(); it != symbols.end(); it++){
     auto symName = it->getName();
@@ -141,6 +156,7 @@ inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
 	llvm::errs() << "no address!\n";
 	throw;
       }
+      break;
     }
   }
   return std::move(res);	
@@ -173,6 +189,40 @@ inline std::vector<llvm::object::SymbolRef> getTextSymbols(const llvm::object::O
 		    return res;
 		  });
 	return std::move(textSymbols);
+}
+
+inline std::pair<LinesAddr, AddrLines> getLinesMat(llvm::DWARFContext& DCtx)
+{
+	LinesAddr lines;
+	AddrLines addrlines;
+
+	auto units = DCtx.compile_units();
+	
+
+	for (auto& unit : units)
+	{	 // TODO: deal with multiple units
+	  const llvm::DWARFDebugLine::LineTable* table =
+				DCtx.getLineTableForUnit(unit.get());
+		if (table)
+		{
+			int max = 0;
+			for (auto row : table->Rows)
+			  {
+				if (row.Line > max)
+					max = row.Line;
+			}
+			// matrix line x addresses
+			lines.resize(max + 1);
+			for (auto row : table->Rows)
+			{
+				lines[row.Line].push_back(row.Address);
+				addrlines[row.Address.Address] = row.Line;
+			}
+		}
+		else
+			llvm::errs() << "table is null\n";
+	}
+	return std::pair<LinesAddr, AddrLines>(lines, addrlines);
 }
 
 
