@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/pietro/Documents/Polimi/Quinto_anno/tesi/code/parse_trace/build",
+  "command": "/usr/bin/c++  -I/home/pietro/llvm/include   -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -g -std=gnu++14 -o CMakeFiles/parsetrace.dir/parseTrace.cpp.o -c /home/pietro/Documents/Polimi/Quinto_anno/tesi/code/parse_trace/parseTrace.cpp",
+  "file": "/home/pietro/Documents/Polimi/Quinto_anno/tesi/code/parse_trace/parseTrace.cpp"
+}
+]

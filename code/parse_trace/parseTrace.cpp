@@ -8,6 +8,7 @@
 #include "fstream" //ifstream
 #include <set>
 #include "callGraph.hpp"
+#include "map.hpp"
 using namespace llvm;
 
 /**
@@ -126,6 +127,53 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
     return std::move(ic);
 }
 
+std::vector<int> getIC_IR(int num_lines, const std::vector<BBTrace>& bbTvec, 
+                       const std::vector<BasicBlock*>& bbVec,
+                       CallGraph& cg,
+                       std::map<Function*, int>& unass){
+  //TODO: this should carry also info about which function the line belongs to
+  //it may be found in debug info of module
+  std::vector<int> ic(num_lines+1); 
+  auto main_node = getMainNode(cg);
+  auto rec_callsites = getRecursiveCallSites(cg);
+  vertex_t curr_node = main_node;
+  edge_t in_edge;
+  
+  for(auto bbt : bbTvec){
+    for(auto& i : *bbVec[bbt.getBBid()]){
+      curr_node = main_node;
+      auto loc = i.getDebugLoc();
+      auto lines = bbt.getLines();
+      if(loc){
+	auto line = loc.getLine();
+	ic[line]++; //TODO: not + 1 but + count[i].
+      }
+      else{
+	unass[i.getParent()->getParent()]++;
+      }
+      
+      for(auto line_it = lines.rbegin(); line_it != lines.rend(); line_it++){
+	if(cg[curr_node].f->getName() == "main"){
+	  ic[*line_it]++; //TODO: not + 1 but + count[i].
+	}
+	else if(checkIncrease(cg, rec_callsites, *line_it, in_edge)){
+	  ic[*line_it]++; //TODO: not + 1 but + count[i].
+	}
+	//move to next node in call graph
+	if(line_it != lines.rend() - 1){
+	  in_edge = getNextEdge(cg, curr_node, *std::next(line_it));
+	  curr_node = target(in_edge, cg);
+	}
+      }
+    }
+  }
+  return std::move(ic);
+}
+
+//1 -> module .ll
+//2 -> trace
+//3 -> source .c
+//4 -> executable with replaced debug info
 int main(int argc, char* argv[]){
     LLVMContext c;
 
@@ -168,5 +216,14 @@ int main(int argc, char* argv[]){
     errs() << "total: " << ic[0] << "\n";
     for(auto el : unass){
         errs() << el.first->getName() << " " << el.second << "\n";
+    }
+
+    auto theMap = getMap(argv[4], *m);
+    for(auto el : theMap){
+      std::cout << std::dec << el.first << ": ";
+      for(auto addr : el.second){
+	std::cout << std::hex << addr << " ";
+      }
+      std::cout << "\n";
     }
 }

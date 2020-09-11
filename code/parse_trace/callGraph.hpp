@@ -1,5 +1,6 @@
 #pragma once
 #include <boost/graph/adjacency_list.hpp>
+#include "llvm/IR/Module.h"
 #include <llvm/IR/Function.h>
 #include "llvm/IR/Instructions.h" //CallInst
 #include "llvm/IR/IntrinsicInst.h" //DBGInfoIntrinsic
@@ -35,7 +36,7 @@ using vertex_t = boost::graph_traits<CallGraph>::vertex_descriptor;
 using nodemap_t = std::map<Function*, vertex_t>;
 
 //! function that creates an entry in the map for each function in the module
-nodemap_t makeNodeMap(Module* M){
+inline nodemap_t makeNodeMap(Module* M){
     nodemap_t res;
     int i = 0;
     for(auto& f : *M){
@@ -51,7 +52,7 @@ nodemap_t makeNodeMap(Module* M){
 /**function that checks if the function call corresponding to the given edge leads
  * to a call to the function correspoding to the source.
  */
-bool isRecursive(CallGraph& cg, edge_t edge, vertex_t source, std::set<edge_t> edges){
+inline bool isRecursive(CallGraph& cg, edge_t edge, vertex_t source, std::set<edge_t> edges){
     if(target(edge,cg) == source){
         return true;
     }
@@ -70,7 +71,7 @@ bool isRecursive(CallGraph& cg, edge_t edge, vertex_t source, std::set<edge_t> e
 
 /** function that sets the recursive attribute in the edges of the call graph
  */
-void setRecursive(CallGraph& cg){
+inline void setRecursive(CallGraph& cg){
     for(auto e : make_iterator_range(edges(cg))){
         std::set<edge_t> explored_edges;
         explored_edges.insert(e);
@@ -79,7 +80,7 @@ void setRecursive(CallGraph& cg){
 }
 
 //! Function that builds a call graph by inspecting all the CallInst in a module
-CallGraph makeCallGraph(Module* M){
+inline CallGraph makeCallGraph(Module* M){
     auto nm = makeNodeMap(M);
     CallGraph res(nm.size());
     for(auto el : nm){
@@ -113,7 +114,7 @@ CallGraph makeCallGraph(Module* M){
     return std::move(res);
 }
 
-void printCG(const CallGraph& cg){
+inline void printCG(const CallGraph& cg){
     for(auto v : make_iterator_range(vertices(cg))){
         errs() << cg[v].f->getName() << ": ";
         for(auto e : make_iterator_range(out_edges(v, cg))){
@@ -124,18 +125,18 @@ void printCG(const CallGraph& cg){
     }
 }
 
-std::string vertDOT(const CallGraph& cg, vertex_t v){
-    return cg[v].f->getName();
+inline std::string vertDOT(const CallGraph& cg, vertex_t v){
+  return cg[v].f->getName().str();
 }
 
-std::string edgeDOT(const CallGraph& cg, edge_t e){
+inline std::string edgeDOT(const CallGraph& cg, edge_t e){
     auto s = vertDOT(cg, source(e,cg));
     auto t = vertDOT(cg, target(e,cg));
     auto f = [](bool rec){ return rec ? "rec" : "not_rec";};
     return s + " -> " + t + "[label = \"" + f(cg[e].recursive) + " line: " + std::to_string(cg[e].callsite) + "\"]";
 }
 
-std::string getDOT(const CallGraph& cg){
+inline std::string getDOT(const CallGraph& cg){
     std::string res = "";
     res += "digraph cg {\n";
     for(auto v : make_iterator_range(vertices(cg))){
@@ -148,7 +149,7 @@ std::string getDOT(const CallGraph& cg){
     return std::move(res);
 }
 
-vertex_t getMainNode(const CallGraph& cg){
+inline vertex_t getMainNode(const CallGraph& cg){
     vertex_t res;
     bool found = false;
     for(auto v : make_iterator_range(vertices(cg))){
@@ -162,7 +163,7 @@ vertex_t getMainNode(const CallGraph& cg){
 }
 
 //! Function that returns the edge correspoding to the callsite given as parameter
-edge_t getNextEdge(const CallGraph& cg, const size_t curr_node, const callsite_t callsite){
+inline edge_t getNextEdge(const CallGraph& cg, const size_t curr_node, const callsite_t callsite){
     edge_t res;
     for(auto e : make_iterator_range(out_edges(curr_node, cg))){
         if(cg[e].callsite == callsite){
@@ -176,7 +177,7 @@ edge_t getNextEdge(const CallGraph& cg, const size_t curr_node, const callsite_t
 }
 
 //! Function that returns true if the given callsite corresponds to a recursive call
-bool isRecursive(const CallGraph& cg, callsite_t line, const std::set<edge_t>& rec_callsites){
+inline bool isRecursive(const CallGraph& cg, callsite_t line, const std::set<edge_t>& rec_callsites){
     for(auto el : rec_callsites){
         if(cg[el].callsite == line){
             return true;
@@ -186,7 +187,7 @@ bool isRecursive(const CallGraph& cg, callsite_t line, const std::set<edge_t>& r
 }
 
 //! Function that returns the edge correspoding to a callsite, only if that callsite is recursive
-edge_t getEdge(const CallGraph& cg, const std::set<edge_t>& rec_callsites, callsite_t line){
+inline edge_t getEdge(const CallGraph& cg, const std::set<edge_t>& rec_callsites, callsite_t line){
     for(auto el : rec_callsites){
         if(cg[el].callsite == line){
             return el;
@@ -199,11 +200,11 @@ edge_t getEdge(const CallGraph& cg, const std::set<edge_t>& rec_callsites, calls
 }
 
 //! Function that checks wheter to assign or not the instruction count cost to a given callsite
-bool checkIncrease(const CallGraph& cg, const std::set<edge_t>& rec_callsites, callsite_t line, edge_t in_edge){
+inline bool checkIncrease(const CallGraph& cg, const std::set<edge_t>& rec_callsites, callsite_t line, edge_t in_edge){
     return !isRecursive(cg, line, rec_callsites);
 }
 
-std::set<edge_t> getRecursiveCallSites(const CallGraph& cg){
+inline std::set<edge_t> getRecursiveCallSites(const CallGraph& cg){
     std::set<edge_t> res;
     for(auto e : make_iterator_range(edges(cg))){
         if(cg[e].recursive){
@@ -213,7 +214,7 @@ std::set<edge_t> getRecursiveCallSites(const CallGraph& cg){
     return std::move(res);
 }
 
-edge_t getEdgeByCallsite(CallGraph& cg, callsite_t callsite){
+inline edge_t getEdgeByCallsite(CallGraph& cg, callsite_t callsite){
     for(auto e : make_iterator_range(edges(cg))){
         if(cg[e].callsite == callsite){
             return e;

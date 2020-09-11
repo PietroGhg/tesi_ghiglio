@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/pietro/Documents/Polimi/Quinto_anno/tesi/code/instrumentation/build/Instrument",
+  "command": "/usr/bin/c++ -DGTEST_HAS_RTTI=0 -I/home/pietro/llvm/include -fPIC   -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -fno-rtti -std=gnu++14 -o CMakeFiles/Instrument.dir/InjectFuncCall.cpp.o -c /home/pietro/Documents/Polimi/Quinto_anno/tesi/code/instrumentation/Instrument/InjectFuncCall.cpp",
+  "file": "/home/pietro/Documents/Polimi/Quinto_anno/tesi/code/instrumentation/Instrument/InjectFuncCall.cpp"
+}
+]
