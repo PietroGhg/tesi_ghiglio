@@ -32,7 +32,8 @@ struct AddIRDebug : public ModulePass {
   DILocation* inlinedAt;
   bool isImpilicitCode;
   
-  bool runOnModule(Module& M) override {
+  /*bool runOnModule(Module& M) override {
+    errs() << M;
     unsigned line_count = 1;
     for(auto& f : M.getFunctionList()){
       if(f.isDeclaration()){
@@ -77,7 +78,7 @@ struct AddIRDebug : public ModulePass {
 				  oldSubProg->getDeclaration(),
 				  oldSubProg->getRetainedNodes(),
 				  oldSubProg->getThrownTypes());
-      f.setSubprogram(newSubProg);
+      f.setSubprogram(newSubProg);      
 
       for(auto& bb : f.getBasicBlockList()){
         for(auto& i : bb.getInstList()){
@@ -86,6 +87,43 @@ struct AddIRDebug : public ModulePass {
           }
 	  new_loc = DebugLoc::get(line_count, 0,
 				  newSubProg,
+				  curr_loc.getInlinedAt(),
+				  curr_loc.isImplicitCode());
+	  i.setDebugLoc(new_loc);   
+          line_count++;
+         }
+      }
+    }
+    
+
+    return false;
+  }*/
+  bool runOnModule(Module& M) override {
+    unsigned line_count = 1;
+    for(auto& f : M.getFunctionList()){
+      if(f.isDeclaration()){
+	continue;
+      }
+
+      //find the first debugloc;
+      for(auto& bb : f){
+	for(auto& i : bb){
+	  if(auto loc = i.getDebugLoc()){
+	    curr_loc = loc;
+	    break;
+	  }
+	}
+      }
+      
+        
+
+      for(auto& bb : f.getBasicBlockList()){
+        for(auto& i : bb.getInstList()){
+          if(auto loc = i.getDebugLoc()){
+	    curr_loc = loc;                 
+          }
+	  new_loc = DebugLoc::get(line_count, 0,
+				  curr_loc.getScope(),
 				  curr_loc.getInlinedAt(),
 				  curr_loc.isImplicitCode());
 	  i.setDebugLoc(new_loc);   

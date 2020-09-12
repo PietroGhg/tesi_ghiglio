@@ -61,9 +61,9 @@ private:
 public:
   ObjFunction(std::string _name):
     name(_name){}
-  std::string getName() { return name; }
-  uint64_t getBegin() { return begin; }
-  uint64_t getEnd() { return (instructions.end() - 1)->getAddr(); }
+  std::string getName() const { return name; }
+  uint64_t getBegin() const { return begin; }
+  uint64_t getEnd() const { return (instructions.end() - 1)->getAddr(); }
   void setBegin(uint64_t _begin){ begin = _begin; }
   void addInst(ObjInstr inst){ instructions.push_back(inst); }
   const std::vector<ObjInstr>& getInstructions() const {
@@ -72,6 +72,7 @@ public:
   std::vector<ObjInstr>& getInstructions(){
     return instructions;
   }
+      
     
   void dump(){
     std::cout << "name: " << name << "\n";
@@ -176,6 +177,7 @@ inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
       break;
     }
   }
+
   return std::move(res);	
 }
 
@@ -247,6 +249,15 @@ inline void completeMapping(AddrLines& addrs,
       else{
 	addrs[i.getAddr()] = lastLoc;
       }
+    }
+  }
+
+  //fix the function prologue
+  //TODO: this is not that good
+  for(auto& f : funcs){
+    for(int i = 0; i < 2; i++){
+      auto begin = f.getBegin();
+      addrs[begin + i] = addrs[begin + 4];
     }
   }
 }

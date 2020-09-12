@@ -1,4 +1,8 @@
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/InitLLVM.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IRReader/IRReader.h"
@@ -127,10 +131,11 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
     return std::move(ic);
 }
 
-std::vector<int> getIC_IR(int num_lines, const std::vector<BBTrace>& bbTvec, 
-                       const std::vector<BasicBlock*>& bbVec,
-                       CallGraph& cg,
-                       std::map<Function*, int>& unass){
+std::vector<int> getICAss(int num_lines, const std::vector<BBTrace>& bbTvec, 
+			  const std::vector<BasicBlock*>& bbVec,
+			  CallGraph& cg,
+			  std::map<Instruction*, unsigned long> instrIndex,
+			  LinesAddr& linesAddr){
   //TODO: this should carry also info about which function the line belongs to
   //it may be found in debug info of module
   std::vector<int> ic(num_lines+1); 
@@ -146,18 +151,18 @@ std::vector<int> getIC_IR(int num_lines, const std::vector<BBTrace>& bbTvec,
       auto lines = bbt.getLines();
       if(loc){
 	auto line = loc.getLine();
-	ic[line]++; //TODO: not + 1 but + count[i].
+	ic[line] = ic[line] + linesAddr[instrIndex[&i]].size(); //TODO: not + 1 but + count[i].
       }
       else{
-	unass[i.getParent()->getParent()]++;
+	//unass[i.getParent()->getParent()]++;
       }
       
       for(auto line_it = lines.rbegin(); line_it != lines.rend(); line_it++){
 	if(cg[curr_node].f->getName() == "main"){
-	  ic[*line_it]++; //TODO: not + 1 but + count[i].
+	  ic[*line_it] = ic[*line_it] + linesAddr[instrIndex[&i]].size();
 	}
 	else if(checkIncrease(cg, rec_callsites, *line_it, in_edge)){
-	  ic[*line_it]++; //TODO: not + 1 but + count[i].
+	  ic[*line_it] = ic[*line_it] + linesAddr[instrIndex[&i]].size();
 	}
 	//move to next node in call graph
 	if(line_it != lines.rend() - 1){
@@ -170,10 +175,11 @@ std::vector<int> getIC_IR(int num_lines, const std::vector<BBTrace>& bbTvec,
   return std::move(ic);
 }
 
-//1 -> module .ll
+//1 -> original module .ll
 //2 -> trace
 //3 -> source .c
 //4 -> executable with replaced debug info
+//5 -> replaced module 
 int main(int argc, char* argv[]){
     LLVMContext c;
 
@@ -218,12 +224,35 @@ int main(int argc, char* argv[]){
         errs() << el.first->getName() << " " << el.second << "\n";
     }
 
+
+
     auto theMap = getMap(argv[4], *m);
-    for(auto el : theMap){
-      std::cout << std::dec << el.first << ": ";
-      for(auto addr : el.second){
-	std::cout << std::hex << addr << " ";
+
+    std::map<Instruction*, unsigned long> instrMap;
+    unsigned long index = 1;
+    for(auto& f : *m){
+      for(auto& bb : f){
+	for(auto& i : bb){
+	  instrMap[&i] = index;
+	  index++;
+	}
       }
-      std::cout << "\n";
     }
+   
+
+
+    auto icAss = getICAss(num_lines, bb_trace_vec, bb_vec, cg, instrMap, theMap);
+    source.clear(); 
+    source.seekg(0, std::ios::beg);
+    i = 1;
+    while(getline(source, line)){
+        if(icAss[i] != 0){
+            errs() << i << ": " << line << " //" << icAss[i] << " assembly instr\n";
+        }
+        else{
+            errs() << i << ": " << line << "\n";
+        }
+        i++;
+    }
+    errs() << "total: " << icAss[0] << "\n";
 }
