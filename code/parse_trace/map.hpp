@@ -7,10 +7,13 @@
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDisassembler/MCDisassembler.h"
+#include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCInstrAnalysis.h"
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
+#include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/MCTargetOptions.h"
+#include "llvm/MC/MCInstPrinter.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -35,21 +38,28 @@ private:
   uint64_t addr;
   uint64_t size;
   llvm::MCInst inst;
+  std::string disass;
   sourceLoc debugLoc = 0; // 0 -> no debugLoc
 public:
-  ObjInstr(uint64_t _addr, uint64_t _size, llvm::MCInst _inst):
-    addr(_addr), size(_size), inst(_inst){}
+  ObjInstr(uint64_t _addr, uint64_t _size,
+	   llvm::MCInst _inst,
+	   std::string& _disass):
+    addr(_addr), size(_size), inst(_inst), disass(_disass){}
   uint64_t getAddr() const { return addr; }
   uint64_t getSize() { return size; }
-  llvm::MCInst getInst() { return std::move(inst); }
   void setDebugLoc(sourceLoc _debugLoc) { debugLoc = _debugLoc; }
+  bool hasDebugLoc(){ return debugLoc != 0; }
   sourceLoc getDebugLoc() const { return debugLoc; }
 
   void dump(){
-    std::cout << std::hex << "addr: " << addr << " ";
+    errs() << "addr: ";
+    errs().write_hex(addr) << " ";
+    errs() << disass << " ";
+    //std::cout <<  disass << " ";
     if(debugLoc){
-      std::cout << std::dec << "debug: " << debugLoc <<  " ";
+      errs() << "debug: " << debugLoc <<  " ";
     }
+    errs() << "\n";
   }
 };
 
@@ -69,18 +79,90 @@ public:
   const std::vector<ObjInstr>& getInstructions() const {
     return instructions;
   }
+
   std::vector<ObjInstr>& getInstructions(){
     return instructions;
+  }
+
+  void setDebugLocations(const AddrLines& addrs){
+    for(auto& instr : instructions){
+      auto toFind = addrs.find(instr.getAddr());
+      if(toFind != addrs.end()){
+	instr.setDebugLoc(toFind->second);
+      }
+    }
+  }
+
+  void fixPrologue(){
+    bool found_once = false;
+    sourceLoc loc;
+    int index;
+    for(index = 0; index < instructions.size(); index++){
+      if(instructions[index].hasDebugLoc() && !found_once){
+	found_once = true;
+      }
+      else if(instructions[index].hasDebugLoc() && found_once){
+	loc = instructions[index].getDebugLoc();
+	index++;
+	break;
+      }
+    }
+
+    for(int i = 0; i < index; i++){
+      instructions[i].setDebugLoc(loc);
+    }
   }
       
     
   void dump(){
-    std::cout << "name: " << name << "\n";
-    std::cout << "begin: " << std::hex << begin
-	      << " end: " << std::hex << getEnd() << "\n";
+    errs() << "name: " << name << "\n";
+    errs() << "begin: ";
+    errs().write_hex(begin) << " end: ";
+    errs().write_hex(getEnd()) << "\n";
     for(auto i : instructions){
       i.dump();
     }
+  }
+};
+
+class ObjModule {
+private:
+  std::vector<ObjFunction> functions;
+public:
+  void addFunction(ObjFunction function){
+    functions.push_back(std::move(function));
+  }
+
+  std::vector<ObjFunction>& getFunctions(){
+    return functions;
+  }
+
+  void setDebugLocations(const AddrLines& addrs){
+    for(auto& el : functions){
+      el.setDebugLocations(addrs);
+    }
+  }
+
+  void fixPrologues(){
+    for(auto& el : functions){
+      el.fixPrologue();
+    }
+  }
+  
+  void dump(){
+    for(auto f : functions){
+      f.dump();
+    }
+  }
+
+  AddrLines getMap(){
+    AddrLines res;
+    for(const auto& f : functions){
+      for(const auto& i : f.getInstructions()){
+	res[i.getAddr()] = i.getDebugLoc();
+      }
+    }
+    return std::move(res);
   }
 };
 
@@ -94,7 +176,8 @@ inline bool isDotText(const llvm::object::SectionRef section){
 inline std::vector<std::string> funcNames(const llvm::Module& m){
   std::vector<std::string> res;
   for(auto& f : m){
-    res.push_back(f.getName().str());
+    if(!f.isDeclaration())
+      res.push_back(f.getName().str());
   }
   return std::move(res);
 }
@@ -113,6 +196,8 @@ inline llvm::object::SectionRef getDotText(const llvm::object::ObjectFile& obj){
 inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
 			  std::string name,
 			  const llvm::MCDisassembler& DisAsm,
+			  llvm::MCInstPrinter& ip,
+			  const llvm::MCSubtargetInfo& sti,
 			  const llvm::ArrayRef<uint8_t>& bytes){
   ObjFunction res(name);
   for(auto it = symbols.begin(); it != symbols.end(); it++){
@@ -163,7 +248,12 @@ inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
 	  auto b = bytes.slice((addr.get() - addrDotText) + index);
 	  auto status = DisAsm.getInstruction(inst, size, b, instr_addr, llvm::errs());
 	  if(status == llvm::MCDisassembler::DecodeStatus::Success){
-	    res.addInst(ObjInstr(instr_addr, size, inst));
+	    std::string s;
+	    raw_string_ostream rso(s);
+	    ip.printInst(&inst, instr_addr, "", sti, rso);
+	    //check out llvm::raw_string_ostream
+	    rso.str();
+	    res.addInst(ObjInstr(instr_addr, size, inst, s));
 	  }
 	  else{
 	    llvm::errs() << "cannot disasseble instr at " << instr_addr << "\n";
@@ -238,29 +328,6 @@ inline LinesAddr getLinesAddr(const AddrLines& addrs){
   return std::move(res);
 }
 
-inline void completeMapping(AddrLines& addrs,
-			    const std::vector<ObjFunction>& funcs){
-  sourceLoc lastLoc;
-  for(auto& f : funcs){
-    for(auto& i : f.getInstructions()){
-      if(addrs.find(i.getAddr()) != addrs.end()){
-	lastLoc = addrs[i.getAddr()];
-      }
-      else{
-	addrs[i.getAddr()] = lastLoc;
-      }
-    }
-  }
-
-  //fix the function prologue
-  //TODO: this is not that good
-  for(auto& f : funcs){
-    for(int i = 0; i < 2; i++){
-      auto begin = f.getBegin();
-      addrs[begin + i] = addrs[begin + 4];
-    }
-  }
-}
 
 inline LinesAddr getMap(std::string objPath, Module& m){
   StringRef Filename(objPath);
@@ -310,11 +377,24 @@ inline LinesAddr getMap(std::string objPath, Module& m){
 					 theTarget->createMCDisassembler(*STI, Ctx));
   if (!DisAsm)
     errs() << "no DisAsm\n";
+  std::unique_ptr<const MCInstrInfo> MII(theTarget->createMCInstrInfo());
+  if(!MII)
+    errs() << "no mcinstrinfo!\n";
+  
+  std::unique_ptr<MCInstPrinter> ip(
+				    theTarget->createMCInstPrinter(
+								   Triple(theTriple.getTriple()),
+								   AsmInfo->getAssemblerDialect(),
+								   *AsmInfo,
+								   *MII,
+								   *MRI));
+  if(!ip)
+    errs() << "no instr printer!\n";
+  
+								   
 	
   // MCInstrAnalysis
-  std::unique_ptr<const MCInstrInfo> MII(theTarget->createMCInstrInfo());
-  std::unique_ptr<const MCInstrAnalysis> MIA(
-					     theTarget->createMCInstrAnalysis(MII.get()));
+  
 
   auto dotText = getDotText(*Obj);
   auto contents = dotText.getContents();
@@ -327,14 +407,22 @@ inline LinesAddr getMap(std::string objPath, Module& m){
   std::vector<SymbolRef> textSymbols = getTextSymbols(*Obj);
         
   //create an ObjFunction for each function in the executable
-  std::vector<ObjFunction> v;
+  ObjModule objM;
   for(auto& name : funcNames(m)){
-    v.push_back(getFun(textSymbols, name, *DisAsm, bytes));
+    objM.addFunction(getFun(textSymbols,
+		       name,
+		       *DisAsm,
+		       *ip,
+		       *STI,		      
+		       bytes));
   }
 		
   //complete the mapping
-  completeMapping(addrs, v);
+  objM.setDebugLocations(addrs);
+  objM.dump();
+  objM.fixPrologues();
+  objM.dump();
 
   //return the line->addresses mapping
-  return std::move(getLinesAddr(addrs));
+  return std::move(getLinesAddr(objM.getMap()));
 }

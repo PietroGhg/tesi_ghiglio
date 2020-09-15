@@ -1,0 +1,88 @@
+\documentclass{beamer}
+\usepackage{textcomp} %textrightarrow
+\usetheme{Boadilla}
+\title{Relazione lavoro svolto}
+\author{Pietro Ghiglio}
+\begin{document}
+\titlepage
+
+\begin{frame}
+\frametitle{Table of Contents}
+\tableofcontents
+\end{frame}
+
+\AtBeginSection[]
+{
+  \begin{frame}
+    \frametitle{Table of Contents}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+\section{Instrumentazione}
+\begin{frame}
+\frametitle{Scopo}
+\begin{itemize}
+\item Propagare a livello di codice sorgente informazioni contenute tramite profiling.
+\item Associare ad ogni riga di codice il numero di istruzioni eseguite durante la run del programma provenienti da essa.
+\item Associare ad ogni chiamata a funzione il numero di istruzioni eseguite a partire dalla chiamata.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Implementazione}
+\begin{itemize}
+\item Stack di callsites, push prima di ogni chiamata, pop dopo la chiamata.
+\item Ad ogni esecuzione di un basic block: stampa id basic block + dump dello stack. 
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Propagazione a livello di codice sorgente}
+Dato un output dell'instrumentazione corrispondente all'esecuzione di un basic block: bbId callsite1 callsite2 ... callsiteN
+\begin{itemize}
+\item Per ogni istruzione llvm contenuta nel basic block corrispondente all'id, assegnare il costo dell'esecuzione dell'istruzione llvm alla location di codice sorgente corrispondente.
+\item Per ogni callsite nel dump dello stack, assegnare il costo dell'istruzione llvm al callsite, a meno di funzioni ricorsive.
+\end{itemize}
+\end{frame}
+
+\subsection{Funzioni ricorsive}
+
+\begin{frame}
+\frametitle{Call Graph}
+\begin{itemize}
+\item Grafo in cui ogni vertice è una funzione.
+\item Un edge (v,u) rappresenta il fatto che la funzione v chiama u.
+\item Label sugli edge con callsite.
+\item Una call (v,u) è ricorsiva se u == v o se da u è possibile richiamare v. ( (v,u) è parte di un ciclo ).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Esempio}
+\end{frame}
+
+\section{Metriche}
+
+\begin{frame}
+\frametitle{Metriche utilizzate}
+Al momento le metriche utilizzabili sono il numero di istruzioni LLVM o il numero di istruzioni Assembly. \linebreak
+Ad entrambe potrebbe essere associato un costo energetico o diretto (istruzioni LLVM) o dato dalla somma del costo delle istruzioni assembly corrispondenti. \linebreak
+Richiede un energy model della target architecture, con le varie considerazioni sulla fattibilità in base alla complessità dell'architettura.
+\end{frame}
+
+\section{Mapping Source -> LLVM -> Assembly}
+\begin{frame}
+\frametitle{Mapping}
+\begin{itemize}
+\item Mapping source $\rightarrow$ LLVM direttamente dalle debug information delle API LLVM. \linebreak Alcune istruzioni (es. malloca all'inizio della funzione) non hanno debug info.
+\item Mapping LLVM $\rightarrow$ Assembly ottenuto tramite un pass che sostituisce le informazioni di debug riguardo alla linea di codice sorgente con un id dell'istruzione stessa. \linebreak Molti metodi delle API LLVM per la modifica delle informazioni di debug sono privati. \linebreak Le informazioni di debug sostituite vengono recuperate effettuando disassembly dell'eseguibile.
+\end{itemize}
+\end{frame}
+
+
+
+
+
+
+\end{document}

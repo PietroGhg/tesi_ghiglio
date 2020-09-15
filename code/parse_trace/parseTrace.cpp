@@ -7,6 +7,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/SourceMgr.h" //SMDiagnostic
+#include "llvm/IR/DebugInfoMetadata.h" //DISubprogram
 #include "boost/algorithm/string.hpp" //string split
 #include "algorithm" //std::transform
 #include "fstream" //ifstream
@@ -91,8 +92,7 @@ int getNumLines(std::ifstream& source){
  */
 std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec, 
                        const std::vector<BasicBlock*>& bbVec,
-                       CallGraph& cg,
-                       std::map<Function*, int>& unass){
+                       const CallGraph& cg){
     //TODO: this should carry also info about which function the line belongs to
     std::vector<int> ic(num_lines+1); 
     auto main_node = getMainNode(cg);
@@ -102,6 +102,7 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
 
     for(auto bbt : bbTvec){
         for(auto& i : *bbVec[bbt.getBBid()]){
+	  auto funcLine = i.getParent()->getParent()->getSubprogram()->getLine();
             curr_node = main_node;
             auto loc = i.getDebugLoc();
             auto lines = bbt.getLines();
@@ -110,7 +111,7 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
                 ic[line]++;
             }
             else{
-                unass[i.getParent()->getParent()]++;
+	      ic[funcLine]++;
             }
             
             for(auto line_it = lines.rbegin(); line_it != lines.rend(); line_it++){
@@ -133,7 +134,7 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
 
 std::vector<int> getICAss(int num_lines, const std::vector<BBTrace>& bbTvec, 
 			  const std::vector<BasicBlock*>& bbVec,
-			  CallGraph& cg,
+			  const CallGraph& cg,
 			  std::map<Instruction*, unsigned long> instrIndex,
 			  LinesAddr& linesAddr){
   //TODO: this should carry also info about which function the line belongs to
@@ -146,6 +147,7 @@ std::vector<int> getICAss(int num_lines, const std::vector<BBTrace>& bbTvec,
   
   for(auto bbt : bbTvec){
     for(auto& i : *bbVec[bbt.getBBid()]){
+      auto funcLine = i.getParent()->getParent()->getSubprogram()->getLine();
       curr_node = main_node;
       auto loc = i.getDebugLoc();
       auto lines = bbt.getLines();
@@ -154,6 +156,7 @@ std::vector<int> getICAss(int num_lines, const std::vector<BBTrace>& bbTvec,
 	ic[line] = ic[line] + linesAddr[instrIndex[&i]].size(); //TODO: not + 1 but + count[i].
       }
       else{
+	ic[funcLine] = ic[funcLine] + linesAddr[instrIndex[&i]].size(); //TODO: not + 1 but + count[i].
 	//unass[i.getParent()->getParent()]++;
       }
       
@@ -202,11 +205,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
     int num_lines = getNumLines(source);
-    std::map<Function*, int> unass;
-    for(auto& f : *(m.get())){
-        unass.insert(std::pair<Function*, int>(&f, 0));
-    }
-    auto ic = getIC(num_lines, bb_trace_vec, bb_vec, cg, unass);
+    auto ic = getIC(num_lines, bb_trace_vec, bb_vec, cg);
 
     std::string line;
     int i = 1;
@@ -220,9 +219,6 @@ int main(int argc, char* argv[]){
         i++;
     }
     errs() << "total: " << ic[0] << "\n";
-    for(auto el : unass){
-        errs() << el.first->getName() << " " << el.second << "\n";
-    }
 
 
 
