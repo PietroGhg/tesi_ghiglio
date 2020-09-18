@@ -234,6 +234,14 @@ int main(int argc, char* argv[]){
 	}
       }
     }
+    
+    std::map<unsigned long, Instruction*> reversed;
+    for(auto& el : instrMap){
+      reversed[el.second] = el.first;
+    }
+    for(auto& el : reversed){
+      errs() << el.first << ": " << *el.second << "\n";
+    }
    
 
 

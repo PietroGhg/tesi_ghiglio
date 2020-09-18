@@ -1,0 +1,7 @@
+digraph cg {
+fact
+main
+fact -> fact[label = "rec line: 3"]
+main -> fact[label = "not_rec line: 9"]
+main -> fact[label = "not_rec line: 10"]
+}

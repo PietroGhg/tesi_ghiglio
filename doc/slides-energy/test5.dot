@@ -1,0 +1,14 @@
+digraph cg {
+main
+f
+g
+h
+main -> f[label = "not_rec line: 6"]
+main -> g[label = "not_rec line: 7"]
+main -> h[label = "not_rec line: 8"]
+f -> g[label = "rec line: 25"]
+g -> h[label = "rec line: 20"]
+h -> h[label = "rec line: 13"]
+h -> h[label = "rec line: 14"]
+h -> f[label = "rec line: 15"]
+}

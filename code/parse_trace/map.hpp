@@ -93,6 +93,19 @@ public:
     }
   }
 
+  void completeDebugLoc(){
+    sourceLoc loc;
+    for(auto& i : instructions){
+      if(i.hasDebugLoc()){
+	loc = i.getDebugLoc();
+      }
+      else{
+	i.setDebugLoc(loc);
+      }
+    }
+  }
+
+
   void fixPrologue(){
     bool found_once = false;
     sourceLoc loc;
@@ -143,6 +156,12 @@ public:
     }
   }
 
+  void completeDebugLoc(){
+    for(auto& el : functions){
+      el.completeDebugLoc();
+    }
+  }
+  
   void fixPrologues(){
     for(auto& el : functions){
       el.fixPrologue();
@@ -421,6 +440,7 @@ inline LinesAddr getMap(std::string objPath, Module& m){
   objM.setDebugLocations(addrs);
   objM.dump();
   objM.fixPrologues();
+  objM.completeDebugLoc();
   objM.dump();
 
   //return the line->addresses mapping
