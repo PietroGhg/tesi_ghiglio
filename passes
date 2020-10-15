@@ -1,0 +1,24 @@
+le trasformazioni operano sempre sullo stesso modulo
+name, move, remove, merge, insert
+adce, n, y, n, n
+block-placement, y, n, n, n
+break-crit-edge n, n, n, y
+dce n, y, n, n
+die n, y, n, n
+dse n, y, n, n
+gvn, n, y, y(?), n, global value numbering
+indvars, a mess
+instcombine, y, y, y, y
+aggressive-instcombine, same
+lcssa, n, n, n, y
+licm, y, n, n, n
+loop-deletion, n, y, n, n
+loop-reduce, n, y, n, y
+loop-simplify
+loop-unroll, n, n, n, y
+loop-unswitch, y, n, n, y
+reassociate, y, n, n, n
+sroa, n, y, n, y
+sccp, n, y, n, y
+simplifycfg, n, y, n, n
+tailcallelim, n, y, n, y

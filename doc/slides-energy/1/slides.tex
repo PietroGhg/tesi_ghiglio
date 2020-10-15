@@ -76,7 +76,7 @@ Dato un output dell'instrumentazione corrispondente all'esecuzione di un basic b
 \item Grafo in cui ogni vertice è una funzione.
 \item Un edge (v,u) rappresenta il fatto che la funzione v chiama u.
 \item Label sugli edge con callsite.
-\item Una call (v,u) è ricorsiva se u == v o se da u è possibile richiamare v. ( (v,u) è parte di un ciclo ).
+\item Una call (v,u) è ricorsiva se l'edge corrispondente è parte di un ciclo.
 \end{itemize}
 \end{frame}
 
