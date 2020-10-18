@@ -1,0 +1,68 @@
+
+\section{LLVM}
+The LLVM Project \cite{llvm} is a collection of modular and reusable compiler toolchain technologies. It is built around an intermediated representation called LLVM-IR, and provides a set of APIs to interact with it. LLVM provides an optimizer that works on the intermediate representation, and also several code generation helpers that allow to target all the main hardware architectures.
+\subsection{LLVM-IR}
+The LLVM-IR is a language that resembles a generic assembly language, while also providing some high level features such as unlimited registers, explicit stack memory allocation and pointer deferentation.
+This allows LLVM-IR to be both the ideal target for high-level language developers, that do not have to worry about architecture specific details, and also the ideal source language for compiler back-end developers, that have to implement only a translator from LLVM-IR to their target architecture's assembly language, without worrying about high-level language features.
+The LLVM-IR is accesible in three formats: in-memory represantation, that allows manipulation through the LLVM APIs, binary format, used by many LLVM tools, and the human-readable textual format, that can also very conveniently be parsed by means of the APIs.
+
+\subsection{SSA and Phi nodes}
+The LLVM-IR is by definition in SSA (Static Single Assignment) form. The SSA form requires a variable to be assigned only once, and requires every variable to be defined before its uses. It is called static because it does not take into account dynamic (related to the program's runtime) considerations. For instance, an assignment in a loop counts always as one assignment, even if at runtime it will be performed several times.\newline
+----esempio \newline
+It is always clear which definition to use, unless a basic block has multiple predecessors. In that case it is necessary to add phi nodes that carry the information to disambiguate the uses at runtime.\newline
+----esempio
+\newline
+
+\subsection{Class hierarchy}
+The class hierarchy defined in the LLVM APIs consists of hundreds of classes, a complete and exhaustive view is given by the LLVM Doxygen Documentation. The main components of the hierarchy are:
+\begin{itemize}
+\item Module: the entire program/compile unit. Contains the global values of the program: mainly the global variables and the functions.
+\item Function: a function in the compile unit, contains mainly a set of arguments and it's control flow graph in the form of a set of basic blocks.
+\item Basic Block: a set of instructions with no branches between them.
+\item Instruction: An instruction of the IR.
+\end{itemize}
+Another key class in the LLVM class hierarchy is the Value class. It represents anything that has a type and can be used as an operand to an instruction: function arguments, constants, instructions, basic blocks and functions are all Values.
+A Value also carries information of what other Values it uses, and what other Values use it.
+
+\subsection{LLVM Metadata}
+The LLVM-IR allows metadata to be attached to Instructions, Functions, Global Variables or  Modules. Metadata can convey extra information about the code to the optimizers and code generator.
+The main use of metadata is debug information, but they may also carry information about loop boundaries or other assumption that are useful during the optimization or code generation phases. \newline
+Metadata can either be a simple string attached to an instruction, or they can be a Metadata Node (MDNode). MDNodes can reference each other and are specified by other classes in the LLVM APIs. See section \ref{sec:llvm-dbg} or the LLVM Language Reference \cite{llvm-langref} for more details.
+
+\subsection{LLVM Passes}
+LLVM passes are where most of the interesting parts of the compiler exist. Passes perform the transformations and optimizations that make up the compiler, they build the analysis results that are used by these transformations, and they are, above all, a structuring technique for compiler code.
+In LLVM, passes may depend on other passes, for instance a pass that performs an optimization may require the results of a pass that performs a specific analysis.
+They are therefore handled by a Pass Manager, that schedules the passes, ensuring that all the requirements for a pass are satisfied before executing it.
+
+\section{Debugging}
+A debugger is a computer program used to test and debug other programs. It allows a programmer to run the target program in controlled conditions, pause the program's execution, check the state of variables and more.
+
+\subsection{Debug information}
+The main functionalities of a debugger, over which more advanced features can be built, are setting break points and accessing the content of a variable. \newline 
+This is achieved by means of debug information: information stored by the compiler in the program's executable, with the purpose of providing a correspondence between source level entities (variable, source code locations, data types) and low level entities (assembly instructions and memory locations). \newline
+The format used to store them may vary with the compiler/operating system used, but the stored information are mainly:
+\begin{itemize}
+\item Definition of the data types employed in the program and their layout in memory, both language-defined (eg. int, float, unsigned in C) or user defined (eg. C structs or C++ classes). 
+\item Mapping between variables defined in the source code and memory locations in which they are stored. This allows a debugger to output the value of a variable given its name.
+\item Mapping between source code locations and assembly instruction. This allows the debugger to pause the program's execution when a given source code location is reached.
+\end{itemize}
+
+\subsection{DWARF format}
+
+The DWARF format \cite{dwarf} is a debugging file format used by many compilers and debuggers to support source-level debugging. It is designed to be extensible with respect of the source language, and to be architecture and operating system independent. \newline
+The main data structure used to store debug information is the DIE (Debug Information Entry). DIEs are used to describe both data types and variables, and can reference each other creating a tree structure. \newline
+Another data structure that is very useful for our purposes is the Line Number Table: it contains the mapping between memory addresses of the executable code, and the source line corresponding to those addresses.\newline
+Each row of the table contains the following fields:
+\begin{itemize}
+\item Address: the program counter value of a machine instruction.
+\item Line: the source line number.
+\item Column: the column number within the line.
+\item File: an integer that identifies the source file.
+\item Statement: boolean indicating if the current instruction is the beginning of a statement.
+\item Block: boolean indicating if the current instruction is the beginning of a basic block.
+\end{itemize}
+And other fields that can be found in the DWARF documentation.
+
+
+
+\section{Energy modeling}
