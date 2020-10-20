@@ -3,7 +3,7 @@
 The LLVM Project \cite{llvm} is a collection of modular and reusable compiler toolchain technologies. It is built around an intermediated representation called LLVM-IR, and provides a set of APIs to interact with it. LLVM provides an optimizer that works on the intermediate representation, and also several code generation helpers that allow to target all the main hardware architectures.
 \subsection{LLVM-IR}
 The LLVM-IR is a language that resembles a generic assembly language, while also providing some high level features such as unlimited registers, explicit stack memory allocation and pointer deferentation.
-This allows LLVM-IR to be both the ideal target for high-level language developers, that do not have to worry about architecture specific details, and also the ideal source language for compiler back-end developers, that have to implement only a translator from LLVM-IR to their target architecture's assembly language, without worrying about high-level language features.
+This allows LLVM-IR to be both the ideal target for high-level language developers, that do not have to worry about architecture specific details, and also the ideal source language for compiler back-end developers, that have to implement only a translator from LLVM-IR to their target architecture's assembly language, without worrying about high-level language features. \par
 The LLVM-IR is accesible in three formats: in-memory represantation, that allows manipulation through the LLVM APIs, binary format, used by many LLVM tools, and the human-readable textual format, that can also very conveniently be parsed by means of the APIs.
 
 \subsection{SSA and Phi nodes}
@@ -26,31 +26,45 @@ A Value also carries information of what other Values it uses, and what other Va
 
 \subsection{LLVM Metadata}
 The LLVM-IR allows metadata to be attached to Instructions, Functions, Global Variables or  Modules. Metadata can convey extra information about the code to the optimizers and code generator.
-The main use of metadata is debug information, but they may also carry information about loop boundaries or other assumption that are useful during the optimization or code generation phases. \newline
+The main use of metadata is debug information, but they may also carry information about loop boundaries or other assumption that are useful during the optimization or code generation phases. \par
 Metadata can either be a simple string attached to an instruction, or they can be a Metadata Node (MDNode). MDNodes can reference each other and are specified by other classes in the LLVM APIs. See section \ref{sec:llvm-dbg} or the LLVM Language Reference \cite{llvm-langref} for more details.
 
 \subsection{LLVM Passes}
-LLVM passes are where most of the interesting parts of the compiler exist. Passes perform the transformations and optimizations that make up the compiler, they build the analysis results that are used by these transformations, and they are, above all, a structuring technique for compiler code.
-In LLVM, passes may depend on other passes, for instance a pass that performs an optimization may require the results of a pass that performs a specific analysis.
-They are therefore handled by a Pass Manager, that schedules the passes, ensuring that all the requirements for a pass are satisfied before executing it.
+LLVM passes are where most of the interesting parts of the compiler exist. Passes perform the transformations and optimizations that make up the compiler, they build the analysis results that are used by these transformations, and they are, above all, a structuring technique for compiler code. \par
+Passes are categorized in two ways: by the granularity at which they operate, and by the fact that they perform changes on the module or not. \newline
+By the first categorization, passes are identified as:
+\begin{itemize}
+\item Module Passes: operate on an entire Module.
+\item Function Passes: operate on a single Function.
+\item Loop Passes: operate only on loops.
+\item Region Passes: operate on subsets of Basic Blocks of a Function, with a single entry point and a single exit point.
+\end{itemize}
+By the second categorization, passes are identified as:
+\begin{itemize}
+\item Analysis Passes: passes that only perform an analysis of the given entity, without modifying it. 
+\item Transformation Passes: passes that may modify the given entity.
+\end{itemize} \par 
+Passes may depend on other passes, for instance a pass that performs an optimization may require the results of a pass that performs a specific analysis.
+They are therefore handled by a Pass Manager that schedules the passes, ensuring that all the dependencies for a pass are met before executing it. 
 
 \section{Debugging}
 A debugger is a computer program used to test and debug other programs. It allows a programmer to run the target program in controlled conditions, pause the program's execution, check the state of variables and more.
 
 \subsection{Debug information}
-The main functionalities of a debugger, over which more advanced features can be built, are setting break points and accessing the content of a variable. \newline 
-This is achieved by means of debug information: information stored by the compiler in the program's executable, with the purpose of providing a correspondence between source level entities (variable, source code locations, data types) and low level entities (assembly instructions and memory locations). \newline
+The main functionality of a debugger, over which more advanced features can be built, are setting break points and accessing the content of a variable. \newline 
+This is achieved by means of debug information: information stored by the compiler in the program's executable, with the purpose of providing a correspondence between source level entities (variable, source code locations, data types) and low level entities (assembly instructions and memory locations). \par
 The format used to store them may vary with the compiler/operating system used, but the stored information are mainly:
 \begin{itemize}
 \item Definition of the data types employed in the program and their layout in memory, both language-defined (eg. int, float, unsigned in C) or user defined (eg. C structs or C++ classes). 
 \item Mapping between variables defined in the source code and memory locations in which they are stored. This allows a debugger to output the value of a variable given its name.
 \item Mapping between source code locations and assembly instruction. This allows the debugger to pause the program's execution when a given source code location is reached.
 \end{itemize}
+These information are useful not only for debugging purposes, they may also be employed by any other tool that requires a mapping between source code and binary executable, such as a profiler or a test coverage tool, that may be able to annotate the source code with the information that they have gathered.
 
 \subsection{DWARF format}
 
-The DWARF format \cite{dwarf} is a debugging file format used by many compilers and debuggers to support source-level debugging. It is designed to be extensible with respect of the source language, and to be architecture and operating system independent. \newline
-The main data structure used to store debug information is the DIE (Debug Information Entry). DIEs are used to describe both data types and variables, and can reference each other creating a tree structure. \newline
+The DWARF format \cite{dwarf} is a debugging file format used by many compilers and debuggers to support source-level debugging. It is designed to be extensible with respect of the source language, and to be architecture and operating system independent. \par
+The main data structure used to store debug information is the DIE (Debug Information Entry). DIEs are used to describe both data types and variables, and can reference each other creating a tree structure. \par
 Another data structure that is very useful for our purposes is the Line Number Table: it contains the mapping between memory addresses of the executable code, and the source line corresponding to those addresses.\newline
 Each row of the table contains the following fields:
 \begin{itemize}
@@ -61,8 +75,24 @@ Each row of the table contains the following fields:
 \item Statement: boolean indicating if the current instruction is the beginning of a statement.
 \item Block: boolean indicating if the current instruction is the beginning of a basic block.
 \end{itemize}
-And other fields that can be found in the DWARF documentation.
+And other fields that are described in the DWARF documentation.
 
 
 
-\section{Energy modeling}
+\section{Instruction Level Energy modeling}
+Given a target's Instruction Set Architecture (ISA), an energy model is a model of the energy consumed by each instruction.
+They have been introduced in 1996 by Tiwari et al. \cite{tiwari}. 
+\subsection{Characterization of an ISA Energy Model}
+The main components of an energy model are:
+\begin{itemize}
+\item Instruction base cost ($B_{i}$, for each instruction $i$): the cost associated with the basic processing needed to execute an instruction. 
+\item Effect of circuit state ($O_{i,j}$, for each pair of instruction $i$, $j$): the cost of the switching activity resulting from executing two consecutive instructions differing one from another.
+\item Other inter-instruction effects ($E_{k}$, for each additional effect $k$): any other effect that can occur in real program, such as stalls or cache misses.
+\end{itemize}
+\par Given these components and a program $P$, the total energy consumed by it, $E_{p}$, is given by:
+\begin{gather*}
+E_{p} = \sum_{i} (B_{i} \times N_{i}) + \sum_{i,j} (O_{i,j} \times N_{i,j}) + \sum_{k} E_{k}
+\end{gather*}
+Where $N_{i}$ is the number of occurrences of instruction $i$, and $N_{i,j}$ is the number of times there has been a switch from instruction $i$ to instruction $j$.
+
+\subsection{Why employing an ISA Energy Model}
