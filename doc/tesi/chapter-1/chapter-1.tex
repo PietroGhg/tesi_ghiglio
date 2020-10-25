@@ -26,10 +26,10 @@ A Value also carries information of what other Values it uses, and what other Va
 
 \subsection{LLVM Metadata}
 The LLVM-IR allows metadata to be attached to Instructions, Functions, Global Variables or  Modules. Metadata can convey extra information about the code to the optimizers and code generator.
-The main use of metadata is debug information, but they may also carry information about loop boundaries or other assumption that are useful during the optimization or code generation phases. \par
+The main use of metadata is debug information, but they may also carry information about loop boundaries or other assumption that are useful during the various stages of the compilation process. \par
 Metadata can either be a simple string attached to an instruction, or they can be a Metadata Node (MDNode). MDNodes can reference each other and are specified by other classes in the LLVM APIs. See section \ref{sec:llvm-dbg} or the LLVM Language Reference \cite{llvm-langref} for more details.
 
-\subsection{LLVM Passes}
+\subsection{LLVM Passes\label{sec:llvm-passes}}
 LLVM passes are where most of the interesting parts of the compiler exist. Passes perform the transformations and optimizations that make up the compiler, they build the analysis results that are used by these transformations, and they are, above all, a structuring technique for compiler code. \par
 Passes are categorized in two ways: by the granularity at which they operate, and by the fact that they perform changes on the module or not. \newline
 By the first categorization, passes are identified as:
@@ -82,7 +82,7 @@ And other fields that are described in the DWARF documentation.
 \section{Instruction Level Energy modeling}
 Given a target's Instruction Set Architecture (ISA), an energy model is a model of the energy consumed by each instruction.
 They have been introduced in 1996 by Tiwari et al. \cite{tiwari}. 
-\subsection{Characterization of an ISA Energy Model}
+\subsection{Characterization of an ISA Energy model}
 The main components of an energy model are:
 \begin{itemize}
 \item Instruction base cost ($B_{i}$, for each instruction $i$): the cost associated with the basic processing needed to execute an instruction. 
@@ -95,4 +95,17 @@ E_{p} = \sum_{i} (B_{i} \times N_{i}) + \sum_{i,j} (O_{i,j} \times N_{i,j}) + \s
 \end{gather*}
 Where $N_{i}$ is the number of occurrences of instruction $i$, and $N_{i,j}$ is the number of times there has been a switch from instruction $i$ to instruction $j$.
 
-\subsection{Why employing an ISA Energy Model}
+\subsection{Why employing an ISA energy model}
+The most common way to describe a processor's power consumption is through the average power consumption. \par
+This single number may not provide enough information to characterize the energy consumed by a program running on the target processor: different programs may employ the functional units of the CPU in different ways, leading to different measurements at equal running time. \par
+ISA Energy Models offer a more detailed view of the energy profile of the target architecture. They therefore allow to identify variations of consumed energy from one program to another, and may also guide decision of both humans (hardware/software design) and software (compilers or operating systems).
+
+\subsection{Producing an ISA energy model}
+Energy models can be produced through an experimental procedure. \newline
+In order to obtain instruction base costs, a program consisting of a large loop of a repeated instruction is written. Then one can measure the average current drawn by the processor while executing the program, $\hat{i}$, and multiply it by the supply voltage $V_{cc}$, obtaining the base energy consumption. \newline
+Instruction may also be grouped together, since instruction with similar functionality will have similar base cost.\par 
+In order to obtain the circuit state effects, loop of pairs of instruction are required. The difference between the instruction's base costs and the average current measured provides the circuit state overhead. \par 
+A similar approach can be employed to obtain the costs of other inter-instruction effects: writing large loops in which the examined effect occurs several times, measuring the average current and subtracting the costs that are already known (base costs and circuit state). \par 
+The main disadvantage of this approach is that several different programs must be written: for an ISA with $n$ instructions, $\bigO(n)$ programs are required to produce base costs and $\bigO(n^{2})$ for circuit state effects. \newline
+Estimation of other inter-instruction effects also gets more difficult as the complexity of the architecture increases. \par
+On the other hand, this approach has the big advantage of not requiring a model of the circuit of the target processor, information that is often not disclosed by the manufacturing companies.
