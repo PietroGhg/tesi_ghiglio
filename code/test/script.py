@@ -17,7 +17,11 @@ def single_to_triple(n):
     (x,y) = pi_inv(xy)
     return (x,y,z)
 
+"""
 for i in range(1000000):
     triple = single_to_triple(i)
     if(triple_to_single(triple[0], triple[1], triple[2]) != i):
         print("argh")
+"""
+
+print(triple_to_single(30,10,1345))

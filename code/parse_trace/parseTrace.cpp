@@ -8,6 +8,7 @@
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/SourceMgr.h" //SMDiagnostic
 #include "llvm/IR/DebugInfoMetadata.h" //DISubprogram
+#include "llvm/Support/FileSystem.h" //path exists
 #include "boost/algorithm/string.hpp" //string split
 #include "algorithm" //std::transform
 #include "fstream" //ifstream
@@ -108,7 +109,8 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
             auto lines = bbt.getLines();
             if(loc){
                 auto line = loc.getLine();
-                ic[line]++;
+		if(line < ic.size()) //TODO: remove this after fix of instrumentation
+		  ic[line]++;
             }
             else{
 	      ic[funcLine]++;
@@ -129,7 +131,7 @@ std::vector<int> getIC(int num_lines, const std::vector<BBTrace>& bbTvec,
             }
         }
     }
-    return std::move(ic);
+    return ic;
 }
 
 std::vector<int> getICAss(int num_lines, const std::vector<BBTrace>& bbTvec, 
@@ -153,11 +155,11 @@ std::vector<int> getICAss(int num_lines, const std::vector<BBTrace>& bbTvec,
       auto lines = bbt.getLines();
       if(loc){
 	auto line = loc.getLine();
-	ic[line] = ic[line] + linesAddr[instrIndex[&i]].size(); //TODO: not + 1 but + count[i].
+	if(line < ic.size()) //TODO: remove this after fix to instrumentation
+	  ic[line] = ic[line] + linesAddr[instrIndex[&i]].size(); //TODO: not + 1 but + count[i].
       }
       else{
 	ic[funcLine] = ic[funcLine] + linesAddr[instrIndex[&i]].size(); //TODO: not + 1 but + count[i].
-	//unass[i.getParent()->getParent()]++;
       }
       
       for(auto line_it = lines.rbegin(); line_it != lines.rend(); line_it++){
@@ -175,14 +177,34 @@ std::vector<int> getICAss(int num_lines, const std::vector<BBTrace>& bbTvec,
       }
     }
   }
-  return std::move(ic);
+  return ic;
 }
+
+//taken from GCOVProfiling.cpp
+static std::string getFilename(const DISubprogram *SP) {
+  SmallString<128> Path;
+  StringRef RelPath = SP->getFilename();
+  if (sys::fs::exists(RelPath))
+    Path = RelPath;
+  else
+    sys::path::append(Path, SP->getDirectory(), SP->getFilename());
+  return Path.str().str();
+}
+
+std::set<std::string> getFiles(const Module& M){
+  std::set<std::string> res;
+  for(auto& F : M){
+    if(auto sp = F.getSubprogram())
+      res.insert(getFilename(sp));
+  }
+  return res;
+}
+    
+  
 
 //1 -> original module .ll
 //2 -> trace
-//3 -> source .c
-//4 -> executable with replaced debug info
-//5 -> replaced module 
+//3 -> executable with replaced debug info
 int main(int argc, char* argv[]){
     LLVMContext c;
 
@@ -199,64 +221,67 @@ int main(int argc, char* argv[]){
     
     auto bb_trace_vec = getBBTraceVec(argv[2]);
     auto bb_vec = getBBvec(m.get());
-    std::ifstream source(argv[3]);
-    if(!source.is_open()){
-        errs() << "error while opening source file.\n";
-        return -1;
-    }
-    int num_lines = getNumLines(source);
-    auto ic = getIC(num_lines, bb_trace_vec, bb_vec, cg);
+    auto theMap = getMap(argv[3], *m);
+    auto files = getFiles(*m);
+    for(auto& f : files){
+      errs() << "Analizing " << f << "\n";
+      std::ifstream source(f);
+      if(!source.is_open()){
+	errs() << "error while opening source file.\n";
+	return -1;
+      }
+      int num_lines = getNumLines(source);
+      auto ic = getIC(num_lines, bb_trace_vec, bb_vec, cg);
 
-    std::string line;
-    int i = 1;
-    while(getline(source, line)){
-        if(ic[i] != 0){
-            errs() << i << ": " << line << " //" << ic[i] << " llvm instr\n";
-        }
-        else{
-            errs() << i << ": " << line << "\n";
-        }
-        i++;
-    }
-    errs() << "total: " << ic[0] << "\n";
+      std::string line;
+      int i = 1;
+      while(getline(source, line)){
+	if(ic[i] != 0){
+	  errs() << i << ": " << line << " //" << ic[i] << " llvm instr\n";
+	}
+	else{
+	  errs() << i << ": " << line << "\n";
+	}
+	i++;
+      }
+      errs() << "total: " << ic[0] << "\n";
 
+      //theMap
 
-
-    auto theMap = getMap(argv[4], *m);
-
-    std::map<Instruction*, unsigned long> instrMap;
-    unsigned long index = 1;
-    for(auto& f : *m){
-      for(auto& bb : f){
-	for(auto& i : bb){
-	  instrMap[&i] = index;
-	  index++;
+      std::map<Instruction*, unsigned long> instrMap;
+      unsigned long index = 1;
+      for(auto& f : *m){
+	for(auto& bb : f){
+	  for(auto& i : bb){
+	    instrMap[&i] = index;
+	    index++;
+	  }
 	}
       }
-    }
     
-    std::map<unsigned long, Instruction*> reversed;
-    for(auto& el : instrMap){
-      reversed[el.second] = el.first;
-    }
-    for(auto& el : reversed){
-      errs() << el.first << ": " << *el.second << "\n";
-    }
+      std::map<unsigned long, Instruction*> reversed;
+      for(auto& el : instrMap){
+	reversed[el.second] = el.first;
+      }
+      /*for(auto& el : reversed){
+	errs() << el.first << ": " << *el.second << "\n";
+      }*/
    
 
 
-    auto icAss = getICAss(num_lines, bb_trace_vec, bb_vec, cg, instrMap, theMap);
-    source.clear(); 
-    source.seekg(0, std::ios::beg);
-    i = 1;
-    while(getline(source, line)){
-        if(icAss[i] != 0){
-            errs() << i << ": " << line << " //" << icAss[i] << " assembly instr\n";
-        }
-        else{
-            errs() << i << ": " << line << "\n";
-        }
-        i++;
+      auto icAss = getICAss(num_lines, bb_trace_vec, bb_vec, cg, instrMap, theMap);
+      source.clear(); 
+      source.seekg(0, std::ios::beg);
+      i = 1;
+      while(getline(source, line)){
+	if(icAss[i] != 0){
+	  errs() << i << ": " << line << " //" << icAss[i] << " assembly instr\n";
+	}
+	else{
+	  errs() << i << ": " << line << "\n";
+	}
+	i++;
+      }
+      errs() << "total: " << icAss[0] << "\n";
     }
-    errs() << "total: " << icAss[0] << "\n";
 }

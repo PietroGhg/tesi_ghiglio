@@ -3,6 +3,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/DebugInfo/DIContext.h"
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
+#include "llvm/DebugInfo/DWARF/DWARFDebugLine.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
@@ -319,6 +320,23 @@ inline std::vector<llvm::object::SymbolRef> getTextSymbols(const llvm::object::O
 	return std::move(textSymbols);
 }
 
+inline std::vector<std::string> getFileNames(const llvm::DWARFDebugLine::LineTable* table){
+  std::vector<std::string> res;
+  auto kind = DILineInfoSpecifier::FileLineInfoKind::AbsoluteFilePath;
+  for(unsigned long i = 1; ; i++){
+    if(table->hasFileAtIndex(i)){
+      std::string path;
+      table->getFileNameByIndex(i, "", kind, path);
+      res.push_back(path);
+    }
+    else{
+      break;
+    }
+  }
+  return res;
+}
+    
+
 inline AddrLines getAddrLines(llvm::DWARFContext& DCtx){
 	AddrLines addrlines;
 
@@ -329,6 +347,9 @@ inline AddrLines getAddrLines(llvm::DWARFContext& DCtx){
 	  const llvm::DWARFDebugLine::LineTable* table =
 	    DCtx.getLineTableForUnit(unit.get());
 	  if(table){
+	    auto files = getFileNames(table);
+	    for(auto f : files)
+	      errs() << "FILE: " << f << "\n";
 	    for (auto row : table->Rows){
 	      addrlines[row.Address.Address] = row.Line;
 	    }
@@ -348,7 +369,7 @@ inline LinesAddr getLinesAddr(const AddrLines& addrs){
 }
 
 
-inline LinesAddr getMap(std::string objPath, Module& m){
+inline LinesAddr getMap(const std::string& objPath, const Module& m){
   StringRef Filename(objPath);
   ErrorOr<std::unique_ptr<MemoryBuffer>> BuffOrErr =
     MemoryBuffer::getFileOrSTDIN(Filename);
@@ -410,10 +431,6 @@ inline LinesAddr getMap(std::string objPath, Module& m){
   if(!ip)
     errs() << "no instr printer!\n";
   
-								   
-	
-  // MCInstrAnalysis
-  
 
   auto dotText = getDotText(*Obj);
   auto contents = dotText.getContents();
@@ -438,11 +455,11 @@ inline LinesAddr getMap(std::string objPath, Module& m){
 		
   //complete the mapping
   objM.setDebugLocations(addrs);
-  objM.dump();
+  //objM.dump();
   objM.fixPrologues();
   objM.completeDebugLoc();
-  objM.dump();
+  //objM.dump();
 
   //return the line->addresses mapping
-  return std::move(getLinesAddr(objM.getMap()));
+  return getLinesAddr(objM.getMap());
 }
