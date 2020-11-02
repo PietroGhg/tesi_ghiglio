@@ -24,4 +24,4 @@ for i in range(1000000):
         print("argh")
 """
 #print(triple_to_single(1345,10,30))
-print(pi(1,1))
+print(triple_to_single(5,3,1))

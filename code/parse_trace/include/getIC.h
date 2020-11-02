@@ -44,16 +44,15 @@ inline raw_ostream& operator<<(raw_ostream& os, const BBTrace& bbt){
 
 using sourcecost_t = std::map<SourceLocation, double>;
 
-inline void addCost(sourcecost_t sc, SourceLocation sourceLoc, double cost){
-  if(sc.find(sourceLoc) == sc.end())
-    sc[sourceLoc] = cost;
-  else
+inline void addCost(sourcecost_t& sc, SourceLocation& sourceLoc, double cost){
+  if(!sc.insert(std::pair<SourceLocation, double>(sourceLoc, cost)).second){
     sc[sourceLoc] += cost;
+  }
+
 }
   
 
-inline sourcecost_t getCost(int num_lines,
-			    const std::vector<BBTrace>& bbTvec, 
+inline sourcecost_t getCost(const std::vector<BBTrace>& bbTvec, 
 			    const std::vector<BasicBlock*>& bbVec,
 			    const CallGraph& cg,
 			    std::function<double (Instruction*)>
@@ -77,9 +76,13 @@ inline sourcecost_t getCost(int num_lines,
 	addCost(sc, sourceLoc, cost);
       }
       else{
+	//the cost of instructions with no location is assigned to
+	//their function's definition's location
 	addCost(sc, funcLocation, cost);
       }
-            
+
+      
+      //assign the cost to the callsites
       for(auto loc_it = locations.rbegin();
 	  loc_it != locations.rend(); loc_it++){
 	if(cg[curr_node].f->getName() == "main"){
@@ -99,23 +102,22 @@ inline sourcecost_t getCost(int num_lines,
   return sc;
 }
 
-inline sourcecost_t getIC(int num_lines, const std::vector<BBTrace>& bbTvec, 
+inline sourcecost_t getIC(const std::vector<BBTrace>& bbTvec, 
                        const std::vector<BasicBlock*>& bbVec,
                        const CallGraph& cg){
   auto costF = [](Instruction* I){ return 1; };
-  return getCost(num_lines, bbTvec, bbVec, cg, costF);
+  return getCost(bbTvec, bbVec, cg, costF);
 }
 
-inline sourcecost_t getICAss(int num_lines,
-				 const std::vector<BBTrace>& bbTvec, 
-				 const std::vector<BasicBlock*>& bbVec,
-				 const CallGraph& cg,
-				 std::map<Instruction*, unsigned long>&
-				 instrIndex,
-				 LinesAddr& linesAddr){
+inline sourcecost_t getICAss(const std::vector<BBTrace>& bbTvec, 
+			     const std::vector<BasicBlock*>& bbVec,
+			     const CallGraph& cg,
+			     std::map<Instruction*, unsigned long>&
+			     instrIndex,
+			     LinesAddr& linesAddr){
   auto cf = [&instrIndex, &linesAddr](Instruction* I){
     return linesAddr[instrIndex[I]].size();
   };
   
-  return getCost(num_lines, bbTvec, bbVec, cg, cf);
+  return getCost(bbTvec, bbVec, cg, cf);
 }

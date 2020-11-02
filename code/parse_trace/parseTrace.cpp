@@ -11,6 +11,7 @@
 #include "boost/algorithm/string.hpp" //string split
 #include "algorithm" //std::transform
 #include "fstream" //ifstream
+#include <fstream>
 #include <set>
 #include "FilesUtils.h"
 #include "sourcelocation.h"
@@ -59,6 +60,41 @@ int getNumLines(std::ifstream& source){
     source.seekg(0, std::ios::beg);
     return ris;
 }
+
+void printAnnotatedFile(const string& sourcePath,
+			sourcecost_t& sc){
+  ifstream source(sourcePath);
+  assert(source.is_open() && "Unable to open source file"); 
+
+  int numLines = getNumLines(source);
+
+  //vector where each line contains the cost associated to the line
+  std::vector<double> linesCosts(numLines+1);
+  for(auto& el : linesCosts)
+    el = 0;
+
+  //update the vector of costs
+  for(auto& el : sc){
+    if(el.first.getFile() == sourcePath)
+      linesCosts[el.first.getLine()] += el.second;
+  }
+
+  //prints the source code and the costs
+  std::string line;
+  int i = 1;
+  errs() << "\nFile: " << sourcePath << "\n";
+  while(getline(source, line)){
+    if(linesCosts[i] != 0){
+      errs() << i << ": " << line << " //" << linesCosts[i] << " llvm instr\n";
+    }
+    else{
+      errs() << i << ": " << line << "\n";
+    }
+    i++;
+  }
+  //errs() << "total: " << linesCosts[0] << "\n";//TODO: fix this
+  source.close();
+}
     
   
 
@@ -81,8 +117,14 @@ int main(int argc, char* argv[]){
     auto idFileMap = getIDFileMap(*m);
     auto bb_trace_vec = getBBTraceVec(argv[2], idFileMap);
     auto bb_vec = getBBvec(m.get());
+
     auto theMap = getMap(argv[3], *m);
     auto files = getFiles(*m);
+    auto scIR = getIC(bb_trace_vec, bb_vec, cg);
+
+    for(auto& f : files){
+      printAnnotatedFile(f, scIR);
+    }
     /*for(auto& f : files){
       errs() << "Analizing " << f << "\n";
       std::ifstream source(f);
@@ -91,7 +133,7 @@ int main(int argc, char* argv[]){
 	return -1;
       }
       int num_lines = getNumLines(source);
-      auto ic = getIC(num_lines, bb_trace_vec, bb_vec, cg);
+      
 
       std::string line;
       int i = 1;

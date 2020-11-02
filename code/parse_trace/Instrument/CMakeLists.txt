@@ -1,6 +1,7 @@
 add_llvm_library(Instrument MODULE 
     InjectFuncCall.cpp
     InjectFuncCall.h
+    ../sourcelocation.cpp
     PLUGIN_TOOL
     opt 
 )

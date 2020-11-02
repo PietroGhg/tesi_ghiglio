@@ -7,6 +7,9 @@
 #include "llvm/IR/GlobalValue.h" //global variable linkage types
 #include "llvm/Transforms/Utils/ModuleUtils.h"
 
+#include "FilesUtils.h"
+#include "sourcelocation.h"
+
 using namespace llvm;
 
 #define DEBUG_TYPE "inject-func-call"
@@ -206,6 +209,8 @@ bool isInjected(Function* f){
 bool InjectFuncCall::runOnModule(Module &M) {
   auto &CTX = M.getContext();
 
+  auto fileIDMap = getFileIDMap(M);
+
   //define struct type
   auto s_type = StructType::create(CTX, "s_stack");
   auto s_pointer_type = s_type->getPointerTo();
@@ -276,9 +281,10 @@ bool InjectFuncCall::runOnModule(Module &M) {
           if(isInjected(c_inst->getCalledFunction()))
             continue;
           //else
-          auto line = i.getDebugLoc().getLine();
+	  SourceLocation sl(i.getDebugLoc().get());	  
+          auto sourceLocID = SourceLocation(i.getDebugLoc().get()).getSingle(fileIDMap);
           //before performing the call, push a new line on the stack
-          CallInst::Create(push, {builder.getInt32(line)}, None, "", &i);
+          CallInst::Create(push, {builder.getInt32(sourceLocID)}, None, "", &i);
           //after performing the call, pop from the stack
           CallInst::Create(pop, "", i.getNextNode());
 
