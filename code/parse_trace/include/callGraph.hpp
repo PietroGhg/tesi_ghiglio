@@ -5,6 +5,7 @@
 #include "llvm/IR/Instructions.h" //CallInst
 #include "llvm/IR/IntrinsicInst.h" //DBGInfoIntrinsic
 #include <map>
+#include "sourcelocation.h"
 
 using namespace llvm;
 using namespace boost;
@@ -13,7 +14,7 @@ struct VertexData {
     Function* f;
 };
 
-using callsite_t = unsigned int;
+using callsite_t = SourceLocation;
 
 struct EdgeData {
     callsite_t callsite;
@@ -100,7 +101,7 @@ inline CallGraph makeCallGraph(Module* M){
                     if(!called->isDeclaration()){
                         auto e = add_edge(nm[&f], nm[called], res);
                         if(auto loc = i.getDebugLoc()){
-                            res[e.first].callsite = loc.getLine();
+			  res[e.first].callsite = SourceLocation(loc);
                         }
                         else{
                             errs() << "no debug location for instruction " << i << "\n";
@@ -111,7 +112,7 @@ inline CallGraph makeCallGraph(Module* M){
         }
     }
     setRecursive(res);
-    return std::move(res);
+    return res;
 }
 
 inline void printCG(const CallGraph& cg){
@@ -133,7 +134,8 @@ inline std::string edgeDOT(const CallGraph& cg, edge_t e){
     auto s = vertDOT(cg, source(e,cg));
     auto t = vertDOT(cg, target(e,cg));
     auto f = [](bool rec){ return rec ? "rec" : "not_rec";};
-    return s + " -> " + t + "[label = \"" + f(cg[e].recursive) + " line: " + std::to_string(cg[e].callsite) + "\"]";
+    return s + " -> " + t + "[label = \"" + f(cg[e].recursive) + " " +
+      cg[e].callsite.toString() + "\"]";
 }
 
 inline std::string getDOT(const CallGraph& cg){

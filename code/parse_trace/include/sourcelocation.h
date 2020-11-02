@@ -3,6 +3,7 @@
 #include <map>
 #include <cmath> //floor, sqrt
 #include "llvm/IR/DebugInfoMetadata.h"
+#include "llvm/Support/raw_ostream.h"
 #include "FilesUtils.h"
 
 class SourceLocation {
@@ -11,8 +12,10 @@ class SourceLocation {
   unsigned Column;
   std::string File;
  public:
+  SourceLocation() : Line(0), Column(0), File("") {}
   SourceLocation(unsigned Line, unsigned Column, const std::string& File);
   SourceLocation(llvm::DILocation* Loc);
+  SourceLocation(llvm::DISubprogram* SubPr);
   SourceLocation(unsigned long id,
 		 std::map<unsigned, std::string>& idFileMap);
   bool operator==(const SourceLocation& Other) const;
@@ -22,7 +25,10 @@ class SourceLocation {
   unsigned long getSingle(std::map<std::string, unsigned>& fileIDMap);
   const std::string& getFile() const { return File; }
   std::string toString() const ;
+  friend raw_ostream& operator<<(raw_ostream& os, const SourceLocation& sl);
 };
+
+
 
 
 /** Support class to convert from 

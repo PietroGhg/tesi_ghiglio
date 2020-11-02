@@ -21,7 +21,8 @@ using namespace llvm;
 
 
 //! Function that opens a trace file and returns a vector of the bbtraces contained in it
-std::vector<BBTrace> getBBTraceVec(const std::string& path){
+std::vector<BBTrace> getBBTraceVec(const std::string& path,
+				   std::map<unsigned, std::string>& idFileMap){
     std::vector<BBTrace> result;
     std::ifstream f(path);
     std::string line;
@@ -31,7 +32,7 @@ std::vector<BBTrace> getBBTraceVec(const std::string& path){
     }
 
     while(std::getline(f, line)){
-        result.push_back(BBTrace(line));
+      result.push_back(BBTrace(line, idFileMap));
     }
     f.close();
     return result;  
@@ -77,12 +78,12 @@ int main(int argc, char* argv[]){
     errs() << getDOT(cg) << "\n";    
     
     
-    
-    auto bb_trace_vec = getBBTraceVec(argv[2]);
+    auto idFileMap = getIDFileMap(*m);
+    auto bb_trace_vec = getBBTraceVec(argv[2], idFileMap);
     auto bb_vec = getBBvec(m.get());
     auto theMap = getMap(argv[3], *m);
     auto files = getFiles(*m);
-    for(auto& f : files){
+    /*for(auto& f : files){
       errs() << "Analizing " << f << "\n";
       std::ifstream source(f);
       if(!source.is_open()){
@@ -122,9 +123,9 @@ int main(int argc, char* argv[]){
       for(auto& el : instrMap){
 	reversed[el.second] = el.first;
       }
-      /*for(auto& el : reversed){
-	errs() << el.first << ": " << *el.second << "\n";
-      }*/
+      //for(auto& el : reversed){
+      //errs() << el.first << ": " << *el.second << "\n";
+      //}
    
 
 
@@ -142,5 +143,5 @@ int main(int argc, char* argv[]){
 	i++;
       }
       errs() << "total: " << icAss[0] << "\n";
-    }
+    }*/
 }

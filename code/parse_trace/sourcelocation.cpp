@@ -1,7 +1,9 @@
 #include "sourcelocation.h"
+#include "include/FilesUtils.h"
 #include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace std;
 
@@ -17,6 +19,13 @@ SourceLocation::SourceLocation(llvm::DILocation* Loc){
   File = getFilename(Scope->getSubprogram());  
   Line = Loc->getLine();
   Column = Loc->getColumn();
+}
+
+SourceLocation::SourceLocation(llvm::DISubprogram* SubPr){
+  assert(SubPr && "Subprogram must not be null");
+  File = getFilename(SubPr);
+  Line = SubPr->getLine();
+  Column = 0;
 }
 
 SourceLocation::SourceLocation(unsigned long id,
@@ -52,4 +61,10 @@ unsigned long SourceLocation::getSingle(map<string, unsigned>& fileIDMap){
 std::string SourceLocation::toString() const {
   return "Line: " + std::to_string(Line) + " Col: " +
     std::to_string(Column) + " File: " + File;
+}
+
+raw_ostream& operator<<(raw_ostream& os,
+			       const SourceLocation& sl){
+  os << sl.toString();
+  return os;
 }
