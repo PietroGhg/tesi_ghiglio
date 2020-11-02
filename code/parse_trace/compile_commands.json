@@ -1,7 +1,17 @@
 [
 {
-  "directory": "/home/pietro/Documents/Polimi/Quinto_anno/tesi/code/parse_trace/build",
-  "command": "/usr/bin/c++  -I/home/pietro/llvm/include   -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -g -std=gnu++14 -o CMakeFiles/parsetrace.dir/parseTrace.cpp.o -c /home/pietro/Documents/Polimi/Quinto_anno/tesi/code/parse_trace/parseTrace.cpp",
-  "file": "/home/pietro/Documents/Polimi/Quinto_anno/tesi/code/parse_trace/parseTrace.cpp"
+  "directory": "/home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/build",
+  "command": "/home/pietro/llvm/bin/clang++  -I/home/pietro/llvm/include -I/home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/include   -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -g -std=gnu++14 -o CMakeFiles/parsetrace.dir/parseTrace.cpp.o -c /home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/parseTrace.cpp",
+  "file": "/home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/parseTrace.cpp"
+},
+{
+  "directory": "/home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/build/Instrument",
+  "command": "/home/pietro/llvm/bin/clang++ -DGTEST_HAS_RTTI=0 -I/home/pietro/llvm/include -I/home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/include -fPIC   -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -fno-rtti -std=gnu++14 -o CMakeFiles/Instrument.dir/InjectFuncCall.cpp.o -c /home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/Instrument/InjectFuncCall.cpp",
+  "file": "/home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/Instrument/InjectFuncCall.cpp"
+},
+{
+  "directory": "/home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/build/AddIRDebug",
+  "command": "/home/pietro/llvm/bin/clang++ -DGTEST_HAS_RTTI=0 -I/home/pietro/llvm/include -I/home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/include -fPIC   -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -fno-rtti -std=gnu++14 -o CMakeFiles/AddIRDebug.dir/AddIRDebug.cpp.o -c /home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/AddIRDebug/AddIRDebug.cpp",
+  "file": "/home/pietro/Desktop/Quinto_anno/tesi/code/parse_trace/AddIRDebug/AddIRDebug.cpp"
 }
 ]

@@ -8,11 +8,11 @@
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/SourceMgr.h" //SMDiagnostic
 #include "llvm/IR/DebugInfoMetadata.h" //DISubprogram
-#include "llvm/Support/FileSystem.h" //path exists
 #include "boost/algorithm/string.hpp" //string split
 #include "algorithm" //std::transform
 #include "fstream" //ifstream
 #include <set>
+#include "FilesUtils.h"
 #include "callGraph.hpp"
 #include "map.hpp"
 using namespace llvm;
@@ -180,25 +180,7 @@ std::vector<int> getICAss(int num_lines, const std::vector<BBTrace>& bbTvec,
   return ic;
 }
 
-//taken from GCOVProfiling.cpp
-static std::string getFilename(const DISubprogram *SP) {
-  SmallString<128> Path;
-  StringRef RelPath = SP->getFilename();
-  if (sys::fs::exists(RelPath))
-    Path = RelPath;
-  else
-    sys::path::append(Path, SP->getDirectory(), SP->getFilename());
-  return Path.str().str();
-}
 
-std::set<std::string> getFiles(const Module& M){
-  std::set<std::string> res;
-  for(auto& F : M){
-    if(auto sp = F.getSubprogram())
-      res.insert(getFilename(sp));
-  }
-  return res;
-}
     
   
 

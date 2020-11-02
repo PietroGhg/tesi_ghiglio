@@ -26,7 +26,7 @@ llvm_map_components_to_libnames(llvm_libs
   ${LLVM_TARGETS_TO_BUILD} #for InitAllTargets
 )
 
-
+include_directories(include)
 add_subdirectory(Instrument)
 add_subdirectory(AddIRDebug)
 add_executable(parsetrace
