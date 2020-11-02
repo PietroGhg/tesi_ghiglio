@@ -22,7 +22,7 @@ public:
         std::transform(splitted.begin()+1, splitted.end(), std::back_inserter(lines), 
                         [](std::string s){ return std::stoi(s); });
     }
-    int getBBid() {return bb_id; }
+    int getBBid() { return bb_id; }
     std::vector<int> getLines(){ return lines; }
     friend raw_ostream& operator<<(raw_ostream& os, const BBTrace& bbt);
 
@@ -56,10 +56,11 @@ inline std::vector<int> getICgen(int num_lines,
             curr_node = main_node;
             auto loc = i.getDebugLoc();
             auto lines = bbt.getLines();
+	    auto cost = costFunction(&i);
             if(loc){
                 auto line = loc.getLine();
 		if(line < ic.size()) //TODO: remove this after fix of instrumentation
-		  ic[line] += costFunction(&i);
+		  ic[line] += cost;
             }
             else{
 	      ic[funcLine]++;
@@ -67,10 +68,10 @@ inline std::vector<int> getICgen(int num_lines,
             
             for(auto line_it = lines.rbegin(); line_it != lines.rend(); line_it++){
                 if(cg[curr_node].f->getName() == "main"){
-                    ic[*line_it]++;
+                    ic[*line_it] += cost;
                 }
                 else if(checkIncrease(cg, rec_callsites, *line_it, in_edge)){
-                    ic[*line_it]++;
+                    ic[*line_it] += cost;
                 }
                 //move to next node in call graph
                 if(line_it != lines.rend() - 1){

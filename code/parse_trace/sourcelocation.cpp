@@ -3,21 +3,13 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/FileSystem.h"
 
+using namespace std;
+
 SourceLocation::SourceLocation(unsigned Line,
 			       unsigned Column,
 			       const std::string& File):
   Line(Line), Column(Column), File(File){}
 
-//taken from GCOVProfiling.cpp
-static std::string getFilename(const llvm::DISubprogram *SP) {
-  llvm::SmallString<128> Path;
-  llvm::StringRef RelPath = SP->getFilename();
-  if (llvm::sys::fs::exists(RelPath))
-    Path = RelPath;
-  else
-    llvm::sys::path::append(Path, SP->getDirectory(), SP->getFilename());
-  return Path.str().str();
-}
 
 SourceLocation::SourceLocation(llvm::DILocation* Loc){
   assert(Loc && "Location must not be null");
@@ -26,6 +18,15 @@ SourceLocation::SourceLocation(llvm::DILocation* Loc){
   Line = Loc->getLine();
   Column = Loc->getColumn();
 }
+
+SourceLocation::SourceLocation(unsigned long id,
+			       map<unsigned, string>& idFileMap){
+  Tri tri(id);
+  Line = tri.getFirst();
+  Column = tri.getSecond();
+  File = idFileMap[tri.getThird()];
+}
+			       
 
 bool SourceLocation::operator==(const SourceLocation& Other) const {
   return Line == Other.getLine() &&
@@ -41,6 +42,11 @@ bool SourceLocation::operator<(const SourceLocation& Other) const {
   if(Column < Other.getColumn())
     return true;
   return false;
+}
+
+unsigned long SourceLocation::getSingle(map<string, unsigned>& fileIDMap){
+  Tri tri(Line, Column, fileIDMap[File]);
+  return tri.getSingle();
 }
 
 std::string SourceLocation::toString() const {

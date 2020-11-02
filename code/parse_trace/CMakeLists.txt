@@ -31,6 +31,7 @@ add_subdirectory(Instrument)
 add_subdirectory(AddIRDebug)
 add_executable(parsetrace
   parseTrace.cpp
+  sourcelocation.cpp
 )
 
 target_link_libraries(parsetrace ${llvm_libs})

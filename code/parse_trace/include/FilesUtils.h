@@ -26,3 +26,25 @@ inline std::set<std::string> getFiles(const Module& M){
   }
   return res;
 }
+
+inline map<unsigned, string> getIDFileMap(const Module& M){
+  auto files = getFiles(M);
+  map<unsigned, string> res;
+  unsigned i = 0;
+  for(auto& f : files){
+    res[i] = f;
+    i++;
+  }
+  return res;
+}
+
+inline map<string, unsigned> getFileIDMap(const Module& M){
+  auto files = getFiles(M);
+  map<string, unsigned> res;
+  unsigned i = 0;
+  for(auto& f : files){
+    res[f] = i;
+    i++;
+  }
+  return res;
+}

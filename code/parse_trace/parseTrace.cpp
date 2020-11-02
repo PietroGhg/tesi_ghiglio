@@ -13,6 +13,7 @@
 #include "fstream" //ifstream
 #include <set>
 #include "FilesUtils.h"
+#include "sourcelocation.h"
 #include "callGraph.hpp"
 #include "map.hpp"
 #include "getIC.h"
@@ -20,7 +21,7 @@ using namespace llvm;
 
 
 //! Function that opens a trace file and returns a vector of the bbtraces contained in it
-std::vector<BBTrace> getBBTraceVec(std::string path){
+std::vector<BBTrace> getBBTraceVec(const std::string& path){
     std::vector<BBTrace> result;
     std::ifstream f(path);
     std::string line;
@@ -33,7 +34,7 @@ std::vector<BBTrace> getBBTraceVec(std::string path){
         result.push_back(BBTrace(line));
     }
     f.close();
-    return std::move(result);  
+    return result;  
 }
 
 //! Function that returns a vector of all the basic blocks in the module
@@ -44,7 +45,7 @@ std::vector<BasicBlock*> getBBvec(Module* m){
             result.push_back(&bb);
         }
     }
-    return std::move(result);
+    return result;
 }
 
 int getNumLines(std::ifstream& source){
