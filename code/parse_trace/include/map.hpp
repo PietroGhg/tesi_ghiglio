@@ -1,3 +1,4 @@
+#pragma once
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/StringExtras.h"	//arrayRefFromStringRef
 #include "llvm/ADT/StringRef.h"
