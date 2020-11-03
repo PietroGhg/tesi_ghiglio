@@ -62,7 +62,8 @@ int getNumLines(std::ifstream& source){
 }
 
 void printAnnotatedFile(const string& sourcePath,
-			sourcecost_t& sc){
+			sourcecost_t& sc,
+			const string& metric){
   ifstream source(sourcePath);
   assert(source.is_open() && "Unable to open source file"); 
 
@@ -85,7 +86,7 @@ void printAnnotatedFile(const string& sourcePath,
   errs() << "\nFile: " << sourcePath << "\n";
   while(getline(source, line)){
     if(linesCosts[i] != 0){
-      errs() << i << ": " << line << " //" << linesCosts[i] << " llvm instr\n";
+      errs() << i << ": " << line << " //" << linesCosts[i] << " " << metric << "\n";
     }
     else{
       errs() << i << ": " << line << "\n";
@@ -118,72 +119,40 @@ int main(int argc, char* argv[]){
     auto bb_trace_vec = getBBTraceVec(argv[2], idFileMap);
     auto bb_vec = getBBvec(m.get());
 
-    auto theMap = getMap(argv[3], *m);
     auto files = getFiles(*m);
     auto scIR = getIC(bb_trace_vec, bb_vec, cg);
 
     for(auto& f : files){
-      printAnnotatedFile(f, scIR);
+      printAnnotatedFile(f, scIR, "llvm instr");
     }
-    /*for(auto& f : files){
-      errs() << "Analizing " << f << "\n";
-      std::ifstream source(f);
-      if(!source.is_open()){
-	errs() << "error while opening source file.\n";
-	return -1;
-      }
-      int num_lines = getNumLines(source);
-      
 
-      std::string line;
-      int i = 1;
-      while(getline(source, line)){
-	if(ic[i] != 0){
-	  errs() << i << ": " << line << " //" << ic[i] << " llvm instr\n";
-	}
-	else{
-	  errs() << i << ": " << line << "\n";
-	}
-	i++;
-      }
-      errs() << "total: " << ic[0] << "\n";
+    //get the source location -> assembly map
+    auto theMap = getMap(argv[3], *m);
 
-      //theMap
-
-      std::map<Instruction*, unsigned long> instrMap;
-      unsigned long index = 1;
-      for(auto& f : *m){
-	for(auto& bb : f){
-	  for(auto& i : bb){
-	    instrMap[&i] = index;
-	    index++;
-	  }
+    //get the instruction -> id map
+    std::map<Instruction*, unsigned long> instrMap;
+    unsigned long index = 1;
+    for(auto& f : *m){
+      for(auto& bb : f){
+	for(auto& i : bb){
+	  instrMap[&i] = index;
+	  index++;
 	}
       }
-    
-      std::map<unsigned long, Instruction*> reversed;
-      for(auto& el : instrMap){
-	reversed[el.second] = el.first;
-      }
-      //for(auto& el : reversed){
-      //errs() << el.first << ": " << *el.second << "\n";
-      //}
-   
+    }
 
+    std::map<unsigned long, Instruction*> reversed;
+    for(auto& el : instrMap){
+      reversed[el.second] = el.first;
+    }
+    for(auto& el : reversed)
+      errs() << *el.second << " " << el.first << "\n";
 
-      auto icAss = getICAss(num_lines, bb_trace_vec, bb_vec, cg, instrMap, theMap);
-      source.clear(); 
-      source.seekg(0, std::ios::beg);
-      i = 1;
-      while(getline(source, line)){
-	if(icAss[i] != 0){
-	  errs() << i << ": " << line << " //" << icAss[i] << " assembly instr\n";
-	}
-	else{
-	  errs() << i << ": " << line << "\n";
-	}
-	i++;
-      }
-      errs() << "total: " << icAss[0] << "\n";
-    }*/
+    //get the map using assembly ic as metric
+    auto scAss = getICAss(bb_trace_vec, bb_vec, cg, instrMap, theMap);
+
+    //print the annotated files
+    for(auto& f : files){
+      printAnnotatedFile(f, scAss, "assembly inst");
+    }
 }

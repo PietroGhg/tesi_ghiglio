@@ -31,9 +31,17 @@
 using namespace llvm;
 using namespace object;
 
-using LinesAddr = std::map<uint64_t, std::vector<uint64_t>>;
-using AddrLines = std::map<uint64_t, uint64_t>;
-using sourceLoc = unsigned long;
+/**This classes are used to retrieve the id of an llvm instruction
+ * found in the debug info of an assembly file whose line information in the line table
+ * have been replaced with the instruction id
+ */
+using llvmID = unsigned long;
+//! map from an address to llvm id
+using AddrLines = std::map<uint64_t, llvmID>;
+//! map from an llvmID to all the addresses associated to it
+using LinesAddr = std::map<llvmID, std::vector<uint64_t>>;
+
+
 
 class ObjInstr{
 private:
@@ -41,17 +49,17 @@ private:
   uint64_t size;
   llvm::MCInst inst;
   std::string disass;
-  sourceLoc debugLoc = 0; // 0 -> no debugLoc
+  llvmID debugLoc = 0; // 0 -> no debugLoc
 public:
   ObjInstr(uint64_t _addr, uint64_t _size,
-	   llvm::MCInst _inst,
+	   llvm::MCInst& _inst,
 	   std::string& _disass):
     addr(_addr), size(_size), inst(_inst), disass(_disass){}
   uint64_t getAddr() const { return addr; }
   uint64_t getSize() { return size; }
-  void setDebugLoc(sourceLoc _debugLoc) { debugLoc = _debugLoc; }
+  void setDebugLoc(llvmID _debugLoc) { debugLoc = _debugLoc; }
   bool hasDebugLoc(){ return debugLoc != 0; }
-  sourceLoc getDebugLoc() const { return debugLoc; }
+  llvmID getDebugLoc() const { return debugLoc; }
 
   void dump(){
     errs() << "addr: ";
@@ -95,8 +103,13 @@ public:
     }
   }
 
+  /**
+   * Completes the debug locations found in the line table, by 
+   * associating each instructrion with unknown location to the 
+   * previous known location.
+   */
   void completeDebugLoc(){
-    sourceLoc loc;
+    llvmID loc;
     for(auto& i : instructions){
       if(i.hasDebugLoc()){
 	loc = i.getDebugLoc();
@@ -107,10 +120,14 @@ public:
     }
   }
 
-
+  /**
+   * LLVM automatically maps the function prologue to to the source line
+   * in which the function has been defined.
+   * This leads to errors in the attribution.
+   */
   void fixPrologue(){
     bool found_once = false;
-    sourceLoc loc;
+    llvmID loc;
     int index;
     for(index = 0; index < instructions.size(); index++){
       if(instructions[index].hasDebugLoc() && !found_once){
@@ -183,7 +200,7 @@ public:
 	res[i.getAddr()] = i.getDebugLoc();
       }
     }
-    return std::move(res);
+    return res;
   }
 };
 
@@ -200,7 +217,7 @@ inline std::vector<std::string> funcNames(const llvm::Module& m){
     if(!f.isDeclaration())
       res.push_back(f.getName().str());
   }
-  return std::move(res);
+  return res;
 }
 
 inline llvm::object::SectionRef getDotText(const llvm::object::ObjectFile& obj){
@@ -209,8 +226,7 @@ inline llvm::object::SectionRef getDotText(const llvm::object::ObjectFile& obj){
       return std::move(sec);
     }
   }
-  llvm::errs() << "no .text!\n";
-  throw;
+  assert(false && "No .text");
 }
   
 
@@ -236,8 +252,7 @@ inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
 	    end = nextAddr.get();
 	  }
 	  else{
-	    llvm::errs() << "no address!\n";
-	    throw;
+	    assert(false && "no address found while disassembling");
 	  }
 	}
 	else{
@@ -246,8 +261,7 @@ inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
 	    end = section.get()->getAddress() + section.get()->getSize();
 	  }
 	  else{
-	    llvm::errs() << "no section!\n";
-	    throw;
+	    assert(false && "no section found while disassembling");
 	  }
 	}
 
@@ -259,8 +273,7 @@ inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
 	  addrDotText = dotText.get()->getAddress();
 	}
 	else{
-	  llvm::errs() << "function has no section ?!?\n";
-	  throw;
+	  assert(false && "function has no section (?!?)");
 	}
 	uint64_t size;
 	llvm::MCInst inst;
@@ -282,8 +295,7 @@ inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
 	}
       }
       else{
-	llvm::errs() << "no address!\n";
-	throw;
+	assert(false && "current symbol has no address");
       }
       break;
     }
@@ -358,7 +370,7 @@ inline AddrLines getAddrLines(llvm::DWARFContext& DCtx){
 	  else
 	    llvm::errs() << "table is null\n";
 	}
-	return std::move(addrlines);
+	return addrlines;
 }
 
 inline LinesAddr getLinesAddr(const AddrLines& addrs){
@@ -366,11 +378,13 @@ inline LinesAddr getLinesAddr(const AddrLines& addrs){
   for(auto el : addrs){
     res[el.second].push_back(el.first);
   }
-  return std::move(res);
+  return res;
 }
 
 
 inline LinesAddr getMap(const std::string& objPath, const Module& m){
+  //a lot of boilerplate to instantiate all the objects needed for the disassembly
+  //taken from llvm-objdump
   StringRef Filename(objPath);
   ErrorOr<std::unique_ptr<MemoryBuffer>> BuffOrErr =
     MemoryBuffer::getFileOrSTDIN(Filename);
@@ -399,28 +413,24 @@ inline LinesAddr getMap(const std::string& objPath, const Module& m){
     TargetRegistry::lookupTarget(theTriple.getTriple(), Error);
   std::unique_ptr<const MCRegisterInfo> MRI(
 					    theTarget->createMCRegInfo(theTriple.getTriple()));
-  if (!MRI)
-    errs() << "no MRI\n";
+  assert(MRI && "no MRI");
+
   MCTargetOptions MCOptions;
   std::unique_ptr<const MCAsmInfo> AsmInfo(
 					   theTarget->createMCAsmInfo(*MRI, theTriple.getTriple(), MCOptions));
-  if (!AsmInfo)
-    errs() << "no AsmInfo\n";
+  assert(AsmInfo && "no AsmInfo");
   MCObjectFileInfo MOFI;
   MCContext Ctx(AsmInfo.get(), MRI.get(), &MOFI);
 	
   // MCDisassembler
   std::unique_ptr<const MCSubtargetInfo> STI(
 					     theTarget->createMCSubtargetInfo(theTriple.getTriple(), "", ""));
-  if (!STI)
-    errs() << "no STI\n";
+  assert(STI && "no STI");
   std::unique_ptr<MCDisassembler> DisAsm(
 					 theTarget->createMCDisassembler(*STI, Ctx));
-  if (!DisAsm)
-    errs() << "no DisAsm\n";
+  assert(DisAsm && "no DisAsm");
   std::unique_ptr<const MCInstrInfo> MII(theTarget->createMCInstrInfo());
-  if(!MII)
-    errs() << "no mcinstrinfo!\n";
+  assert(MII && "no mcinstrinfo!");
   
   std::unique_ptr<MCInstPrinter> ip(
 				    theTarget->createMCInstPrinter(
@@ -429,10 +439,10 @@ inline LinesAddr getMap(const std::string& objPath, const Module& m){
 								   *AsmInfo,
 								   *MII,
 								   *MRI));
-  if(!ip)
-    errs() << "no instr printer!\n";
-  
+  assert(ip && "no instr printer!");
+  //end of the boilerplate code
 
+  //retrieve the .text section
   auto dotText = getDotText(*Obj);
   auto contents = dotText.getContents();
   ArrayRef<uint8_t> bytes;
@@ -459,7 +469,7 @@ inline LinesAddr getMap(const std::string& objPath, const Module& m){
   //objM.dump();
   objM.fixPrologues();
   objM.completeDebugLoc();
-  //objM.dump();
+  objM.dump();
 
   //return the line->addresses mapping
   return getLinesAddr(objM.getMap());
