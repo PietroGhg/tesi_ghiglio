@@ -1,4 +1,7 @@
 //to run: opt -load=./Instrument.so -legacy-inject-func-call test2.ll -S  > new.ll
+/*
+  per scrivere file guarda profiledata/instrprof.cpp -> createprofilefilenamevar
+*/
 #include "InjectFuncCall.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
