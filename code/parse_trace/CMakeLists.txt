@@ -34,7 +34,9 @@ add_executable(parsetrace
   sourcelocation.cpp
 )
 
-target_link_libraries(parsetrace ${llvm_libs})
+
+
+target_link_libraries(parsetrace ${llvm_libs} jsoncpp)
 target_compile_options(parsetrace PUBLIC -g)
 set_property(TARGET parsetrace PROPERTY CXX_STANDARD 14)
 set_property(TARGET parsetrace PROPERTY CXX_STANDARD_REQUIRED ON)

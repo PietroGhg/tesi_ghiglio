@@ -18,7 +18,10 @@
 #include "callGraph.hpp"
 #include "map.hpp"
 #include "getIC.h"
+#include "parsejson.h"
+
 using namespace llvm;
+
 
 
 //! Function that opens a trace file and returns a vector of the bbtraces contained in it
@@ -102,7 +105,7 @@ void printAnnotatedFile(const string& sourcePath,
 //1 -> original module .ll
 //2 -> trace
 //3 -> executable with replaced debug info
-int main(int argc, char* argv[]){
+/*int main(int argc, char* argv[]){
     LLVMContext c;
 
     SMDiagnostic err;
@@ -156,3 +159,13 @@ int main(int argc, char* argv[]){
       printAnnotatedFile(f, scAss, "assembly inst");
     }
 }
+*/
+
+int main() {
+  auto cm = test();
+
+  for(auto& el : cm){
+    errs() << el.first << " " << el.second << "\n";
+  }
+}
+
