@@ -4,9 +4,9 @@
 #include <map>
 
 using namespace std;
-using costMap_t = map<string, string>;
+using costMap_t = map<string, double>;
 
-inline costMap_t test() {
+inline costMap_t getCostMap(double freq, double power) {
   costMap_t cm;
   fstream f("../cpi.json");
   assert(f.is_open() && "file not open");
@@ -14,8 +14,8 @@ inline costMap_t test() {
   f >> root;
 
   for(int i = 0; i < root.size(); i++){
-    cm.insert(pair<string,string>(root[i]["opname"].asString(),
-				  root[i]["cost"].asString()));
+    cm.insert(pair<string,int>(root[i]["opname"].asString(),
+			       root[i]["cost"].asDouble()*freq*power));
   }
 
   return cm;

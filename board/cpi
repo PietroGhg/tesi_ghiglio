@@ -94,7 +94,7 @@ Multiple	STM Rn, {<reglist>}	1 + N
 
 Push
 Push	PUSH {<reglist>}	1 + N	
-Push with link register	PUSH {<reglist>, LR}	1 + N	
+Push with link register	PUSH {<reglist>, lr}	1 + N	
 Pop
 Pop	POP {<reglist>}	1 + N	
 Pop and return	POP {<reglist>, pc}	1 + N + P	
@@ -109,18 +109,18 @@ Store exclusive byte	STREXB Rd, Rt, [Rn]	2
 Clear exclusive monitor	CLREX	1	
 
 Branch
-Conditional	B<CC> <label>	1or1 + P	
+Conditional	B<CC> <label>	1 + P	
 Unconditional	B <label>	1 + P	
 With link	BL <label>	1 + P	
 With exchange	BX Rm	1 + P	
 With link and exchange	BLX Rm	1 + P	
 Branch if zero	CBZ Rn, <label>	1 or 1 + P	
-Branch if non-zero	CBNZ Rn, <label>	1 or 1 + P
+Branch if non-zero	CBNZ Rn, <label>	1 + P
 Byte table branch	TBB [Rn, Rm]	2 + P	
-Halfword table branch	TBH [Rn, Rm, LSL#1]	2 + P	
+Halfword table branch	TBH [Rn, Rm, lsl#1]	2 + P	
 
 Statechange
-Supervisor call	SVC #<imm>	-	
+Supervisor call	SVC #<imm>	0	
 If-then-else	IT... <cond>	1	
 Disable interrupts	CPSID <flags>	1 or 2	
 Enable interrupts	CPSIE <flags>	1 or 2	
