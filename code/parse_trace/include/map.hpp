@@ -228,15 +228,42 @@ inline llvm::object::SectionRef getDotText(const llvm::object::ObjectFile& obj){
   }
   assert(false && "No .text");
 }
+
+inline uint64_t getEnd(const std::vector<llvm::object::SymbolRef>& symbols,
+		       std::vector<llvm::object::SymbolRef>::const_iterator currSym){
+
+  auto currAddr = currSym->getAddress();
+  assert(bool(currAddr) && "no address in function start sym");
+  auto nextSym = std::next(currSym);
+  auto nextAddr = nextSym->getAddress();
+  assert(bool(nextAddr) && "no address while computing function end");
+
+  //need to iterate in order to avoid some symbols that have the same address
+  //as the function start
+  while(nextSym != symbols.end() && nextAddr.get() == currAddr.get()){
+      nextSym = std::next(nextSym);
+      nextAddr = nextSym->getAddress();
+      assert(bool(nextAddr) && "no address while computing function end");
+  }
+  if(nextSym != symbols.end()){
+    return nextAddr.get();
+  }
+  else{
+    auto section = currSym->getSection();
+    assert(bool(section) && "no section found while disassembling");
+    return section.get()->getAddress() + section.get()->getSize();
+  }
+}
   
 
-inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
-			  std::string name,
+inline ObjFunction getFun(const std::vector<llvm::object::SymbolRef>& symbols,
+			  const std::string& name,
 			  const llvm::MCDisassembler& DisAsm,
 			  llvm::MCInstPrinter& ip,
 			  const llvm::MCSubtargetInfo& sti,
 			  const llvm::ArrayRef<uint8_t>& bytes){
   ObjFunction res(name);
+
   for(auto it = symbols.begin(); it != symbols.end(); it++){
     auto symName = it->getName();
     if(bool(symName) && symName.get() == name){
@@ -244,26 +271,7 @@ inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
       if(bool(addr)){
 	//compute end of function: either next symbol or next section
 	res.setBegin(addr.get());
-	uint64_t end;
-	if(std::next(it) != symbols.end()){
-	  llvm::object::SymbolRef nextSym = *std::next(it);
-	  auto nextAddr = nextSym.getAddress();
-	  if(bool(nextAddr)){
-	    end = nextAddr.get();
-	  }
-	  else{
-	    assert(false && "no address found while disassembling");
-	  }
-	}
-	else{
-	  auto section = it->getSection();
-	  if(bool(section)){
-	    end = section.get()->getAddress() + section.get()->getSize();
-	  }
-	  else{
-	    assert(false && "no section found while disassembling");
-	  }
-	}
+	uint64_t end = getEnd(symbols, it);
 
 	//start disassembling instructions
 	//find addres of .text
@@ -301,7 +309,7 @@ inline ObjFunction getFun(std::vector<llvm::object::SymbolRef> symbols,
     }
   }
 
-  return std::move(res);	
+  return res;	
 }
 
 inline std::vector<llvm::object::SymbolRef> getTextSymbols(const llvm::object::ObjectFile& obj){
@@ -330,7 +338,7 @@ inline std::vector<llvm::object::SymbolRef> getTextSymbols(const llvm::object::O
 		    }
 		    return res;
 		  });
-	return std::move(textSymbols);
+	return textSymbols;
 }
 
 inline std::vector<std::string> getFileNames(const llvm::DWARFDebugLine::LineTable* table){
@@ -361,8 +369,6 @@ inline AddrLines getAddrLines(llvm::DWARFContext& DCtx){
 	    DCtx.getLineTableForUnit(unit.get());
 	  if(table){
 	    auto files = getFileNames(table);
-	    for(auto f : files)
-	      errs() << "FILE: " << f << "\n";
 	    for (auto row : table->Rows){
 	      addrlines[row.Address.Address] = row.Line;
 	    }

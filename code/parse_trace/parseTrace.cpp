@@ -105,7 +105,7 @@ void printAnnotatedFile(const string& sourcePath,
 //1 -> original module .ll
 //2 -> trace
 //3 -> executable with replaced debug info
-/*int main(int argc, char* argv[]){
+int main(int argc, char* argv[]){
     LLVMContext c;
 
     SMDiagnostic err;
@@ -159,13 +159,5 @@ void printAnnotatedFile(const string& sourcePath,
       printAnnotatedFile(f, scAss, "assembly inst");
     }
 }
-*/
 
-int main() {
-  auto cm = test();
-
-  for(auto& el : cm){
-    errs() << el.first << " " << el.second << "\n";
-  }
-}
 

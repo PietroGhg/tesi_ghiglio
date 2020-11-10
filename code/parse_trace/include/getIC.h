@@ -83,7 +83,7 @@ inline sourcecost_t getCost(const std::vector<BBTrace>& bbTvec,
 
       
       //assign the cost to the callsites
-      for(auto loc_it = locations.rbegin();
+      /*for(auto loc_it = locations.rbegin();
 	  loc_it != locations.rend(); loc_it++){
 	if(cg[curr_node].f->getName() == "main"){
 	  addCost(sc, *loc_it, cost);
@@ -96,7 +96,8 @@ inline sourcecost_t getCost(const std::vector<BBTrace>& bbTvec,
 	  in_edge = getNextEdge(cg, curr_node, *std::next(loc_it));
 	  curr_node = target(in_edge, cg);
 	}
-      }
+      }*/
+      
     }
   }
   return sc;
