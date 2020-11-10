@@ -263,49 +263,47 @@ inline ObjFunction getFun(const std::vector<llvm::object::SymbolRef>& symbols,
 			  const llvm::MCSubtargetInfo& sti,
 			  const llvm::ArrayRef<uint8_t>& bytes){
   ObjFunction res(name);
+  auto it = symbols.begin();
 
-  for(auto it = symbols.begin(); it != symbols.end(); it++){
+  //find the iterator of the symbol corresponding to the given name
+  for( ; it != symbols.end(); it++){
     auto symName = it->getName();
-    if(bool(symName) && symName.get() == name){
-      auto addr = it->getAddress();
-      if(bool(addr)){
-	//compute end of function: either next symbol or next section
-	res.setBegin(addr.get());
-	uint64_t end = getEnd(symbols, it);
-
-	//start disassembling instructions
-	//find addres of .text
-	auto dotText = it->getSection();
-	uint64_t addrDotText;
-	if(bool(dotText)){
-	  addrDotText = dotText.get()->getAddress();
-	}
-	else{
-	  assert(false && "function has no section (?!?)");
-	}
-	uint64_t size;
-	llvm::MCInst inst;
-	for(uint64_t index = 0; index < (end - addr.get()); index += size){
-	  auto instr_addr = addr.get() + index;
-	  auto b = bytes.slice((addr.get() - addrDotText) + index);
-	  auto status = DisAsm.getInstruction(inst, size, b, instr_addr, llvm::errs());
-	  if(status == llvm::MCDisassembler::DecodeStatus::Success){
-	    std::string s;
-	    raw_string_ostream rso(s);
-	    ip.printInst(&inst, instr_addr, "", sti, rso);
-	    //check out llvm::raw_string_ostream
-	    rso.str();
-	    res.addInst(ObjInstr(instr_addr, size, inst, s));
-	  }
-	  else{
-	    llvm::errs() << "cannot disasseble instr at " << instr_addr << "\n";
-	  }
-	}
-      }
-      else{
-	assert(false && "current symbol has no address");
-      }
+    assert(bool(symName) && "current symbol has no name");
+    if(symName.get() == name){
       break;
+    }
+  }
+  assert(it != symbols.end() && "symbol name not found");
+  
+  auto addr = it->getAddress();
+  assert(bool(addr) && "current symbols has no address");
+  //compute end of function: either next symbol or next section
+  res.setBegin(addr.get());
+  uint64_t end = getEnd(symbols, it);
+
+  //start disassembling instructions
+  //find addres of .text
+  auto dotText = it->getSection();
+  uint64_t addrDotText;
+  assert(bool(dotText) && "function has no section (?!?)");
+  addrDotText = dotText.get()->getAddress();
+
+  uint64_t size;
+  llvm::MCInst inst;
+  for(uint64_t index = 0; index < (end - addr.get()); index += size){
+    auto instr_addr = addr.get() + index;
+    auto b = bytes.slice((addr.get() - addrDotText) + index);
+    auto status = DisAsm.getInstruction(inst, size, b, instr_addr, llvm::errs());
+    if(status == llvm::MCDisassembler::DecodeStatus::Success){
+      std::string s;
+      raw_string_ostream rso(s);
+      ip.printInst(&inst, instr_addr, "", sti, rso);
+      //check out llvm::raw_string_ostream
+      rso.str();
+      res.addInst(ObjInstr(instr_addr, size, inst, s));
+    }
+    else{
+      llvm::errs() << "cannot disasseble instr at " << instr_addr << "\n";
     }
   }
 
@@ -318,7 +316,7 @@ inline std::vector<llvm::object::SymbolRef> getTextSymbols(const llvm::object::O
 	for (auto symbol : obj.symbols())
 	  {
 	    auto sect = symbol.getSection();
-	    if (bool(sect)){
+	    if(bool(sect)){
 	      auto name = sect.get()->getName();
 	      if (isDotText(*(sect.get()))){
 		textSymbols.push_back(symbol);
@@ -332,11 +330,10 @@ inline std::vector<llvm::object::SymbolRef> getTextSymbols(const llvm::object::O
 		  [](llvm::object::SymbolRef& s1, llvm::object::SymbolRef& s2) {
 		    auto addr1 = s1.getAddress();
 		    auto addr2 = s2.getAddress();
-		    bool res = false;
-		    if(bool(addr1) && bool(addr2)){
-		      res = addr1.get() < addr2.get();
-		    }
-		    return res;
+		    assert(bool(addr1) && "symbol with no address while comp");
+		    assert(bool(addr2) && "symbol with no address while comp");
+		    return addr1.get() < addr2.get();
+
 		  });
 	return textSymbols;
 }
