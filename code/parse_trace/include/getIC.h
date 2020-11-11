@@ -46,9 +46,14 @@ inline raw_ostream& operator<<(raw_ostream& os, const BBTrace& bbt){
 using sourcecost_t = std::map<SourceLocation, double>;
 
 inline void addCost(sourcecost_t& sc, SourceLocation& sourceLoc, double cost){
+
   if(!sc.insert(std::pair<SourceLocation, double>(sourceLoc, cost)).second){
-    sc[sourceLoc] += cost;
+    sc[sourceLoc] = sc[sourceLoc] +  cost;
   }
+  /*if(sc.find(sourceLoc) != sc.end())
+    sc[sourceLoc] += cost;
+  else
+    sc[sourceLoc] = cost;*/
 
 }
   
@@ -84,7 +89,7 @@ inline sourcecost_t getCost(const std::vector<BBTrace>& bbTvec,
 
       
       //assign the cost to the callsites
-      /*for(auto loc_it = locations.rbegin();
+      for(auto loc_it = locations.rbegin();
 	  loc_it != locations.rend(); loc_it++){
 	if(cg[curr_node].f->getName() == "main"){
 	  addCost(sc, *loc_it, cost);
@@ -97,7 +102,7 @@ inline sourcecost_t getCost(const std::vector<BBTrace>& bbTvec,
 	  in_edge = getNextEdge(cg, curr_node, *std::next(loc_it));
 	  curr_node = target(in_edge, cg);
 	}
-      }*/
+      }
       
     }
   }

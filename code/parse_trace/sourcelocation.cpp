@@ -46,10 +46,19 @@ bool SourceLocation::operator==(const SourceLocation& Other) const {
 bool SourceLocation::operator<(const SourceLocation& Other) const {
   if(File < Other.getFile())
     return true;
+  else if(File > Other.getFile())
+    return false;
+  
   if(Line < Other.getLine())
     return true;
+  else if(Line > Other.getLine())
+    return false;
+
   if(Column < Other.getColumn())
     return true;
+  else if (Column > Other.getColumn())
+    return false;
+  
   return false;
 }
 
