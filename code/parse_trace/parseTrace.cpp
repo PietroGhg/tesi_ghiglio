@@ -105,6 +105,7 @@ void printAnnotatedFile(const string& sourcePath,
 //1 -> original module .ll
 //2 -> trace
 //3 -> executable with replaced debug info
+//4 -> json cpi
 int main(int argc, char* argv[]){
     LLVMContext c;
 
@@ -157,6 +158,14 @@ int main(int argc, char* argv[]){
     //print the annotated files
     for(auto& f : files){
       printAnnotatedFile(f, scAss, "assembly inst");
+    }
+
+    //joule as metric
+    //180mhz, 5907 microW
+    auto costMap = getCostMap(180, 5907, argv[4]);
+    auto scJoule = getJoule(bb_trace_vec, bb_vec, cg ,instrMap, theMap, costMap);
+    for(auto& f : files){
+      printAnnotatedFile(f, scJoule, "microJoule");
     }
 }
 

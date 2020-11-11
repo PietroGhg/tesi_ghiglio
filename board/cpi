@@ -126,7 +126,7 @@ Disable interrupts	CPSID <flags>	1 or 2
 Enable interrupts	CPSIE <flags>	1 or 2	
 Read special register	MRS Rd, <specreg>	1 or 2	
 Write special register	MSR <specreg>, Rn	1 or 2	
-Breakpoint	BKPT #<imm>	-	
+Breakpoint	BKPT #<imm>	0	
 
 Extend
 Signed halfword to word	SXTH Rd, <op2>	1	

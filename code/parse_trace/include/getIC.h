@@ -7,6 +7,7 @@
 #include <functional> //std::function
 #include "map.hpp"
 #include "sourcelocation.h"
+#include "parsejson.h"
 
 using namespace llvm;
 
@@ -115,10 +116,31 @@ inline sourcecost_t getICAss(const std::vector<BBTrace>& bbTvec,
 			     const CallGraph& cg,
 			     std::map<Instruction*, unsigned long>&
 			     instrIndex,
-			     LinesAddr& linesAddr){
+			     LinesInstr& linesAddr){
   auto cf = [&instrIndex, &linesAddr](Instruction* I){
     return linesAddr[instrIndex[I]].size();
   };
   
   return getCost(bbTvec, bbVec, cg, cf);
 }
+
+inline sourcecost_t getJoule(const std::vector<BBTrace>& bbTvec,
+			     const std::vector<BasicBlock*> bbVec,
+			     const CallGraph& cg,
+			     std::map<Instruction*, unsigned long>&
+			     instrIndex,
+			     LinesInstr& linesAddr,
+			     costMap_t costMap) {
+  auto cf = [&instrIndex, &linesAddr, &costMap](Instruction* I){
+    double cost = 0;
+    for(auto& assInstr : linesAddr[instrIndex[I]]) {
+      assert(costMap.find(assInstr.getOperation()) != costMap.end() &&
+	     "cannot find element in cost map");
+      cost += costMap[assInstr.getOperation()];
+    }
+    return cost;
+  };
+
+  return getCost(bbTvec, bbVec, cg, cf);
+}
+			     

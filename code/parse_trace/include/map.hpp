@@ -21,9 +21,10 @@
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/Module.h"
-
 #include <bits/stdint-uintn.h>
-#include <iostream>
+#include <boost/algorithm/string/trim.hpp>
+#include "boost/algorithm/string.hpp" //string split, trim
+
 
 // targets for disassembly
 #include "llvm/Support/TargetSelect.h"
@@ -40,6 +41,7 @@ using llvmID = unsigned long;
 using AddrLines = std::map<uint64_t, llvmID>;
 //! map from an llvmID to all the addresses associated to it
 using LinesAddr = std::map<llvmID, std::vector<uint64_t>>;
+
 
 
 
@@ -61,11 +63,23 @@ public:
   bool hasDebugLoc(){ return debugLoc != 0; }
   llvmID getDebugLoc() const { return debugLoc; }
 
+  
+  bool operator<(const ObjInstr& other) const {
+    return getAddr() < other.getAddr();
+  }
+
+  std::string getOperation() const {
+    auto disass_copy = boost::trim_left_copy(disass);
+    std::vector<std::string> splitted;
+    boost::algorithm::split(splitted, disass_copy,
+			    [](char c){ return c == ' ' || c == '\t';});
+    return splitted[0];
+  }
+
   void dump(){
     errs() << "addr: ";
     errs().write_hex(addr) << " ";
     errs() << disass << " ";
-    //std::cout <<  disass << " ";
     if(debugLoc){
       errs() << "debug: " << debugLoc <<  " ";
     }
@@ -155,7 +169,11 @@ public:
       i.dump();
     }
   }
+
 };
+
+using InstrLines = std::map<ObjInstr, llvmID>;
+using LinesInstr = std::map<llvmID, std::vector<ObjInstr>>;
 
 class ObjModule {
 private:
@@ -187,30 +205,29 @@ public:
     }
   }
   
-  void dump(){
+  void dump() const {
     for(auto f : functions){
       f.dump();
     }
   }
 
-  AddrLines getMap(){
-    AddrLines res;
+  InstrLines getMap() const {
+    InstrLines res;
     for(const auto& f : functions){
       for(const auto& i : f.getInstructions()){
-	res[i.getAddr()] = i.getDebugLoc();
+	res[i] = i.getDebugLoc();
       }
     }
     return res;
   }
 };
 
+
 inline bool isDotText(const llvm::object::SectionRef section){
   auto name = section.getName();
   return bool(name) && name.get() == ".text";
 }
 
-//TODO: function mangling
-//http://www.avabodh.com/cxxin/namemangling.html
 inline std::vector<std::string> funcNames(const llvm::Module& m){
   std::vector<std::string> res;
   for(auto& f : m){
@@ -376,8 +393,8 @@ inline AddrLines getAddrLines(llvm::DWARFContext& DCtx){
 	return addrlines;
 }
 
-inline LinesAddr getLinesAddr(const AddrLines& addrs){
-  LinesAddr res;
+inline LinesInstr getLinesAddr(const InstrLines& addrs){
+  LinesInstr res;
   for(auto el : addrs){
     res[el.second].push_back(el.first);
   }
@@ -385,7 +402,7 @@ inline LinesAddr getLinesAddr(const AddrLines& addrs){
 }
 
 
-inline LinesAddr getMap(const std::string& objPath, const Module& m){
+inline LinesInstr getMap(const std::string& objPath, const Module& m){
   //a lot of boilerplate to instantiate all the objects needed for the disassembly
   //taken from llvm-objdump
   StringRef Filename(objPath);
