@@ -50,11 +50,6 @@ inline void addCost(sourcecost_t& sc, SourceLocation& sourceLoc, double cost){
   if(!sc.insert(std::pair<SourceLocation, double>(sourceLoc, cost)).second){
     sc[sourceLoc] = sc[sourceLoc] +  cost;
   }
-  /*if(sc.find(sourceLoc) != sc.end())
-    sc[sourceLoc] += cost;
-  else
-    sc[sourceLoc] = cost;*/
-
 }
   
 
@@ -62,7 +57,8 @@ inline sourcecost_t getCost(const std::vector<BBTrace>& bbTvec,
 			    const std::vector<BasicBlock*>& bbVec,
 			    const CallGraph& cg,
 			    std::function<double (Instruction*)>
-			    costFunction){
+			    costFunction,
+			    bool attributeCallsites){
     //TODO: this should carry also info about which function the line belongs to
   sourcecost_t sc;
   auto main_node = getMainNode(cg);
@@ -89,31 +85,33 @@ inline sourcecost_t getCost(const std::vector<BBTrace>& bbTvec,
 
       
       //assign the cost to the callsites
-      for(auto loc_it = locations.rbegin();
-	  loc_it != locations.rend(); loc_it++){
-	if(cg[curr_node].f->getName() == "main"){
-	  addCost(sc, *loc_it, cost);
-	}
-	else if(checkIncrease(cg, rec_callsites, *loc_it, in_edge)){
-	  addCost(sc, *loc_it, cost);
-	}
-	//move to next node in call graph
-	if(loc_it != locations.rend() - 1){
-	  in_edge = getNextEdge(cg, curr_node, *std::next(loc_it));
-	  curr_node = target(in_edge, cg);
+      if(attributeCallsites) {
+	for(auto loc_it = locations.rbegin();
+	    loc_it != locations.rend(); loc_it++){
+	  if(cg[curr_node].f->getName() == "main"){
+	    addCost(sc, *loc_it, cost);
+	  }
+	  else if(checkIncrease(cg, rec_callsites, *loc_it, in_edge)){
+	    addCost(sc, *loc_it, cost);
+	  }
+	  //move to next node in call graph
+	  if(loc_it != locations.rend() - 1){
+	    in_edge = getNextEdge(cg, curr_node, *std::next(loc_it));
+	    curr_node = target(in_edge, cg);
+	  }
 	}
       }
-      
     }
   }
   return sc;
 }
 
 inline sourcecost_t getIC(const std::vector<BBTrace>& bbTvec, 
-                       const std::vector<BasicBlock*>& bbVec,
-                       const CallGraph& cg){
+			  const std::vector<BasicBlock*>& bbVec,
+			  const CallGraph& cg,
+			  bool attributeCallsites){
   auto costF = [](Instruction* I){ return 1; };
-  return getCost(bbTvec, bbVec, cg, costF);
+  return getCost(bbTvec, bbVec, cg, costF, attributeCallsites);
 }
 
 inline sourcecost_t getICAss(const std::vector<BBTrace>& bbTvec, 
@@ -121,12 +119,13 @@ inline sourcecost_t getICAss(const std::vector<BBTrace>& bbTvec,
 			     const CallGraph& cg,
 			     std::map<Instruction*, unsigned long>&
 			     instrIndex,
-			     LinesInstr& linesAddr){
+			     LinesInstr& linesAddr,
+			     bool attributeCallsites){
   auto cf = [&instrIndex, &linesAddr](Instruction* I){
     return linesAddr[instrIndex[I]].size();
   };
   
-  return getCost(bbTvec, bbVec, cg, cf);
+  return getCost(bbTvec, bbVec, cg, cf, attributeCallsites);
 }
 
 inline sourcecost_t getJoule(const std::vector<BBTrace>& bbTvec,
@@ -135,7 +134,8 @@ inline sourcecost_t getJoule(const std::vector<BBTrace>& bbTvec,
 			     std::map<Instruction*, unsigned long>&
 			     instrIndex,
 			     LinesInstr& linesAddr,
-			     costMap_t costMap) {
+			     costMap_t costMap,
+			     bool attributeCallsites) {
   auto cf = [&instrIndex, &linesAddr, &costMap](Instruction* I){
     double cost = 0;
     for(auto& assInstr : linesAddr[instrIndex[I]]) {
@@ -146,6 +146,6 @@ inline sourcecost_t getJoule(const std::vector<BBTrace>& bbTvec,
     return cost;
   };
 
-  return getCost(bbTvec, bbVec, cg, cf);
+  return getCost(bbTvec, bbVec, cg, cf, attributeCallsites);
 }
 			     

@@ -32,16 +32,39 @@ The main disadvantage of this approach is that several different programs must b
 Estimation of other inter-instruction effects also gets more difficult as the complexity of the architecture increases. \par
 On the other hand, this approach has the big advantage of not requiring a model of the circuit of the target processor, information that is often not disclosed by the manufacturing companies.
 
+ M. T.-C. Lee, V. Tiwari, S. Malik, and M. Fujita.
+Power analysis and minimization techniques for
+embedded DSP software 
+technique to group instructions into common classes.
+
 \section{Energy consumption estimation}
+fahad: comparative study of direct measure vs rapl and direct measure vs prediction based on performance counters for intel multicore cpus.
+use direct measure as ground truth, it shows that both techniques have very high error.
+
+wattch: architectural simulator that estimates CPU power consumption.
+it provides cycle-level power simulation, which allows to compute maximum and average power consumption, and overall energy consumption.
+parametrizable power model + resource usage counts obtained through cycle-level simulation. more high level than verilog (less accurate, but doesn't require full circuit design and is way faster). uses simplescalar as architectural simulator, providing it power models of the most common structures present in superscalar microprocessors.
+it requires power models of the subcomponents of a processor, such as register files, caches, functional units, reservation stations.
+ 
 Paper eder. 
 da leggere less is more\\
 xmos energy model: energy modeling of multi-threaded architecture. context switching has an energy cost. extends tiwari's model by adding thread switching cost. xmprofile software suite: allows to generate load and monitor test executions. tests are generated automatically. generate tests only for instructions with no effects on control flow and no non-deterministic timing.
 observes that number of operands has significant impact on power consumption. data width has an impact on power consumption (low impact). they choose to generalize inter-instruction overhead. 
-for instructions that cannot be directly tested, they propose two solutions: 1) group instructions by #operands, and put the untestable instr in the appropriate group. 2) assign default cost to untestable instr. 
+for instructions that cannot be directly tested, they propose two solutions: 1) group instructions by number of operands, and put the untestable instr in the appropriate group. 2) assign default cost to untestable instr. 
 they obtain execution statistics by hardware simulation (this can be replaced by profiling).
 grouped model performs worse than individual model (16percent error vs 7percent error). both provide a consistent underestimation.
-da leggere: lee, nunez-yanez
 
+
+lee: energy model of risc architectures, targeting embedded systems. combining empirical method and statistical analysis.
+developed a model whose unknown are estimated tanks to data from empirical observations, through linear regression. they say that modeling in tiwari's way is too simplistic, since it relays only on average current.  
+First they model the energy consumption: pipelined processor, e(X,Y) is the energy when X is executed after Y (this allows to consider switching activity). it depends on several variables (v), they consider f(vx,vy): the variation on the variable v between x and y, which depends on the hemming distance between vx and vy. 
+they test several sets of programs: in the first set, they test same instructions, same operands different location and determine the impact of the instruction fetch stage. in the second set, they derive instruction base cost in each of the pipeline stages.
+
+nunez-yanez: system level energy/power modeling (on chip system: memory, cpu, gpu; no camera/display). they require RTL design information (often not available), and then through linear regression they produce a power model of the whole SoC. They provide high detail, being able to characterize power consumption of different components (cpu, ram, cache), but the requirement of the RTL design is too strict. 
+
+brandolese2008: energy estimation from source code and visualization on source code. the parse tree of a C program is decorated by associating a a cost-contribution (atom) to each node. following the grammar's rule of the C language, rules to combine instruction costs are defined. the parse tree is then instrumented in order to produce a trace during the program's execution. cost coefficients are estimated through least square fitting, comparing to to the output of the ARMulator instruction set simulator.
+this approach relays on analyzing the parse tree. this allows source code visualization but binds to the source level language: in order to change source language, it would be required to perform a complete analysis of the grammar rule of the new language.
+claims to be 10k times faster than ARMulator.
 
 rieger: misurazione diretta della corrente (campo magnetico indotto) + metodo preso da NLP. dicono loro stessi che non funziona. \\
 rieger-survey: alcuni tool commericali, altra letteratura. molto android/java (ex. powertutor)

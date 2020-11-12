@@ -3,6 +3,7 @@
 #include <fstream>
 #include <assert.h>
 #include <map>
+#include "llvm/Support/raw_ostream.h"
 
 using namespace std;
 using costMap_t = map<string, double>;
