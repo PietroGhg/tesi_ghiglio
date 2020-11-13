@@ -1,5 +1,22 @@
-\section{Motivations}
-Solita pappardella + paper interview sull'energia
+\section{Overview}
+
+This section will provide an overview of the state of the art methods to measure, estimate and visualize the energy consumption of software. \par
+In general, there is no unique solution to this problem: the proposed techniques vary by both the applicative domain, the properties of the result and the procedure with which the result is obtained. \par
+For the applicative domains, we have identified three main cases:
+\begin{itemize}
+\item Embedded systems: embedded systems are often employed as sensors in contexts where the only source of electricity is their own battery. Therefore, energy consumption has always been a concern of both hardware and software developers.
+\item Smart phones: similarly to embedded systems, smart phones have to relay on their own battery to operate. The current rate of battery improvement is around 5\% a year, but the workloads that smart phones have to withstand increases by an order of magnitude every 5 years \cite{nunez}. This means that energy consumption has to be tackled also from the software prospective.
+\item Multicore CPU: energy consumption is not a big concern from the point of view of PC users. But it is a primary concern in large datacenters where heat dissipation requires good engineering solutions, and whose impact on global CO2 emission and energy consumption is non-negligible.
+\end{itemize}
+\par In terms of the properties of the result of the measurement/estimate, solutions differ by their granularity: some provide a single quantity (the total amount of energy consumed by a program), other have a finer grain, allowing to attribute energy measures to either source code entities or hardware components. 
+\par The procedure adopted to obtain the result are widely different, \cite{rieger} provides an overview of some techniques, and groups them in simulation-based and measurement-based. Simulation based technique require a model of the target architecture, and, provided a segment of binary code, perform a cycle-accurate simulation of the events that occur during the program's run. \newline
+Measurement-based techniques, instead, can be further sub-grouped in roughly three categories:
+\begin{itemize}
+\item Direct measurement: the measure can be taken by plugging the device to an instrument that allows to measure the current, voltage or power absorbed by the device while running the program.
+\item Performance-counter based: some hardware architectures provide special register that store information about the energy consumption, and a set of APIs that allow to read their contents.
+\item Modeling based: some solutions propose to model mathematically the energy behavior of the target architecture, perform some experiments in order to estimate the parameters of the model, and use the model in order to obtain an estimate of the consumed energy.
+\end{itemize} 
+\par The dimensions that we have indicated are not completely orthogonal. In particular, modeling based approaches usually target embedded devices, since they have usually simpler underlying architectures that are inherently simpler to analyze. \newline Performance counter based method, instead, are bound to specific architectures that provide such counters, such as Intel's Running Average Power Limit (RAPL), for their Sandy Bridge architectures, the Intel System Management Controller (SMC) for the Xeon Phi, or NVidia's Nvidia Management Library (NVML), that allows to obatin energy consumption of their GPUs.
 
 \section{Instruction Level Energy modeling}
 Given a target's Instruction Set Architecture (ISA), an energy model is a model of the energy consumed by each instruction.
