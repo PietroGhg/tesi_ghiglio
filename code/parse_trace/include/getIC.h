@@ -1,11 +1,11 @@
 #pragma once
 #include "boost/algorithm/string.hpp" //string split
 #include "llvm/Support/raw_ostream.h"
-#include "callGraph.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DebugInfoMetadata.h" //DISubprogram
 #include <functional> //std::function
-#include "map.hpp"
+#include "map.h"
+#include "callGraph.h"
 #include "sourcelocation.h"
 #include "parsejson.h"
 
@@ -16,7 +16,7 @@ private:
     int bb_id;
     std::vector<SourceLocation> locations;
 public:
-    //assumes to receive a string in the shape: bb_id line1 line2 line3
+  //assumes to receive a string in the shape: bb_id line1 line2 line3
   BBTrace(std::string trace,
 	  std::map<unsigned, std::string>& idFileMap){
       std::vector<std::string> splitted;
@@ -28,7 +28,17 @@ public:
 		     [&idFileMap](std::string s){
 		       return SourceLocation(std::stoi(s), idFileMap); });
     }
-    int getBBid() { return bb_id; }
+
+  //sets only the id
+  BBTrace(std::string trace){
+    std::vector<std::string> splitted;
+    boost::algorithm::split(splitted, trace, [](char c){ return c == ' ';});
+    bb_id = std::stoi(splitted[0]);
+  }
+  
+  BBTrace(int bb_id, std::vector<SourceLocation> locations):
+    bb_id(bb_id), locations(locations){}
+    int getBBid() const { return bb_id; }
     const std::vector<SourceLocation>& getLocations() const { return locations; }
     friend raw_ostream& operator<<(raw_ostream& os, const BBTrace& bbt);
 

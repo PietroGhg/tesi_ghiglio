@@ -32,6 +32,7 @@ add_subdirectory(AddIRDebug)
 add_executable(parsetrace
   parseTrace.cpp
   sourcelocation.cpp
+  extendCall.cpp
 )
 
 
