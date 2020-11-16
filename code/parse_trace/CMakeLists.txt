@@ -28,6 +28,7 @@ llvm_map_components_to_libnames(llvm_libs
 
 include_directories(include)
 add_subdirectory(Instrument)
+add_subdirectory(SimpleInstrument)
 add_subdirectory(AddIRDebug)
 add_executable(parsetrace
   parseTrace.cpp

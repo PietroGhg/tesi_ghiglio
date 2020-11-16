@@ -105,8 +105,8 @@ inline sourcecost_t getCost(const std::vector<BBTrace>& bbTvec,
 	    addCost(sc, *loc_it, cost);
 	  }
 	  //move to next node in call graph
-	  if(loc_it != locations.rend() - 1){
-	    in_edge = getNextEdge(cg, curr_node, *std::next(loc_it));
+	  if(loc_it != locations.rend()){
+	    in_edge = getNextEdge(cg, curr_node, *loc_it);
 	    curr_node = target(in_edge, cg);
 	  }
 	}

@@ -1,5 +1,4 @@
-#ifndef LLVM_TUTOR_INSTRUMENT_BASIC_H
-#define LLVM_TUTOR_INSTRUMENT_BASIC_H
+#pragma once
 
 #include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
@@ -7,7 +6,7 @@
 //------------------------------------------------------------------------------
 // New PM interface
 //------------------------------------------------------------------------------
-struct InjectFuncCall : public llvm::PassInfoMixin<InjectFuncCall> {
+struct SimpleInject : public llvm::PassInfoMixin<SimpleInject> {
   llvm::PreservedAnalyses run(llvm::Module &M,
                               llvm::ModuleAnalysisManager &);
   bool runOnModule(llvm::Module &M);
@@ -16,12 +15,11 @@ struct InjectFuncCall : public llvm::PassInfoMixin<InjectFuncCall> {
 //------------------------------------------------------------------------------
 // Legacy PM interface
 //------------------------------------------------------------------------------
-struct LegacyInjectFuncCall : public llvm::ModulePass {
+struct LegacySimpleInject : public llvm::ModulePass {
   static char ID;
-  LegacyInjectFuncCall() : ModulePass(ID) {}
+  LegacySimpleInject() : ModulePass(ID) {}
   bool runOnModule(llvm::Module &M) override;
 
-  InjectFuncCall Impl;
+  SimpleInject Impl;
 };
 
-#endif

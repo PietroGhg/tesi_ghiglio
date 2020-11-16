@@ -402,7 +402,9 @@ inline LinesInstr getLinesAddr(const InstrLines& addrs){
 }
 
 
-inline LinesInstr getMap(const std::string& objPath, const Module& m){
+inline LinesInstr getMap(const std::string& objPath,
+			 const Module& m,
+			 bool printDisAss){
   //a lot of boilerplate to instantiate all the objects needed for the disassembly
   //taken from llvm-objdump
   StringRef Filename(objPath);
@@ -489,7 +491,8 @@ inline LinesInstr getMap(const std::string& objPath, const Module& m){
   //objM.dump();
   objM.fixPrologues();
   objM.completeDebugLoc();
-  objM.dump();
+  if(printDisAss)
+    objM.dump();
 
   //return the line->addresses mapping
   return getLinesAddr(objM.getMap());

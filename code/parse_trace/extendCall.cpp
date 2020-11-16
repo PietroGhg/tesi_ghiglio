@@ -27,12 +27,19 @@ void CallSitesStack::push(StackElement el){
   stack.push_back(el);
 }
 
+/**
+ * Pops an element from the callsite stack.
+ * Check if there are other callsites that must be pushed.
+ * If the element was a return-terminated bb, recursively pop the next element
+ * 
+ */
 void CallSitesStack::pop(){
   if(stack.empty()){
     return;
   }
   auto lastEl = stack.back();
   ExtendedBB* extBB = lastEl.getExtBB();
+  assert(extBB->hasCallSites() && "trying to pop bb with no callsites");
 
   if(extBB->finished()){
     stack.pop_back();
@@ -56,7 +63,10 @@ BBTrace CallSitesStack::getBBT(unsigned long id){
   return BBTrace(id, locations);
 }
 
-
+/**
+ * Function that, given a trace of extended basic blocks, 
+ * returns a trace equivalent to the output of the old instrumentation
+ */
 vector<BBTrace> extendBBT(vector<ExtendedBB>& extBBs){
   vector<BBTrace> result;
   CallSitesStack csStack;

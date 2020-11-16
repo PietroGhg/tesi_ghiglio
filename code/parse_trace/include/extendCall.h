@@ -7,6 +7,11 @@
 using namespace llvm;
 using namespace std;
 
+/**
+ * Class that represents a basic block and explicitly carries 
+ * information about the calls in the bb, and wheter or not 
+ * it terminates with a return instruction.
+ */
 class ExtendedBB {
  private:
   unsigned long id;
@@ -27,6 +32,10 @@ class ExtendedBB {
   unsigned long getID() { return id; }
 };
 
+/**
+ * Class for elements of the stack, carries the callsite and a pointer to the
+ * basic block it came from.
+ */
 class StackElement {
  private:
   ExtendedBB* extBB;
@@ -38,6 +47,9 @@ class StackElement {
   SourceLocation getCallSite(){ return callSite; }
 };
 
+/**
+ * Class for the stack of callsites
+ */
 class CallSitesStack {
  private:
   vector<StackElement> stack;

@@ -40,7 +40,13 @@ static cl::opt<bool>
 callsites("callsites", cl::desc("Attribute cost to callsites"), cl::init(false));
 
 static cl::opt<bool>
+simple("simple", cl::desc("True if trace has been produced with the simple intrumentation and requires expansion"), cl::init(true));
+
+static cl::opt<bool>
 printCallGr("printCG", cl::desc("Print call graph"), cl::init(false));
+
+static cl::opt<bool>
+printDisAss("printDisAss", cl::desc("Print call graph"), cl::init(false));
 
 static cl::opt<std::string>
 module("m", cl::desc("Input module"));
@@ -144,85 +150,6 @@ std::map<Instruction*, unsigned long> getInstrMap(Module& m){
     return instrMap;
 }
     
-  
-
-/*int main(int argc, char* argv[]){
-
-  //parse command line
-  cl::ParseCommandLineOptions(argc, argv);
-  if(module.empty()){
-    errs() << "no module specified, exiting\n";
-    return -1;
-  }
-
-  if(assInstr && binary.empty()){
-    errs() << "assembly instruction requested but no binary provided\n";
-    return -1;
-  }
-
-  if(energy && json.empty()){
-    errs() << "energy requested but no json provided\n";
-    return -1;
-  }
-  
-  if(trace.empty()){
-    errs() << "no trace specified, exiting\n";
-    return -1;
-  }
-  LLVMContext c;
-
-  SMDiagnostic err;
-  auto m = parseIRFile(module, err, c);
-  assert(m && "error while opening .ll file\n");
-  auto cg = makeCallGraph(m.get());
-  if(printCallGr)
-    errs() << getDOT(cg) << "\n";    
-    
-    
-  auto idFileMap = getIDFileMap(*m);
-  auto bb_trace_vec = getBBTraceVec(trace, idFileMap);
-  auto bb_vec = getBBvec(m.get());
-
-  auto files = getFiles(*m);
-
-  if(llvmInstr) {
-    auto scIR = getIC(bb_trace_vec, bb_vec, cg, callsites);
-    for(auto& f : files){
-      printAnnotatedFile(f, scIR, "llvm instr");
-    }
-  }
-
-
-  LinesInstr theMap;
-  std::map<Instruction*, unsigned long> instrMap;
-  if(assInstr || energy) {
-    //get the source location -> assembly map
-    theMap = getMap(binary, *m);
-    instrMap = getInstrMap(*m);
-  }
-    
-
-  if(assInstr) {
-    //get the map using assembly ic as metric
-    auto scAss = getICAss(bb_trace_vec, bb_vec, cg, instrMap, theMap, callsites);
-
-    //print the annotated files
-    for(auto& f : files){
-      printAnnotatedFile(f, scAss, "assembly inst");
-    }
-  }
-
-  //joule as metric
-  //180mhz, 5907 microW
-  if(energy) {
-    auto costMap = getCostMap(180, 5907, json);
-    auto scJoule = getJoule(bb_trace_vec, bb_vec, cg ,instrMap, theMap,
-			    costMap, callsites);
-    for(auto& f : files){
-      printAnnotatedFile(f, scJoule, "microJoule");
-    }
-  }
-}*/
 
 int main(int argc, char* argv[]){
 
@@ -255,28 +182,39 @@ int main(int argc, char* argv[]){
   auto cg = makeCallGraph(m.get());
   if(printCallGr)
     errs() << getDOT(cg) << "\n";    
-    
-    
-  auto idFileMap = getIDFileMap(*m);
-  auto bb_trace_vec = getBBTraceVec(trace, idFileMap);
+
   auto bb_vec = getBBvec(m.get());
+  vector<BBTrace> bb_trace_vec;
 
-
-  auto simpleBBV = getSimpleBBTVec(trace);
-  auto extBBVec = getExtBBVec(bb_vec, simpleBBV);
-  auto extBBT = extendBBT(extBBVec);
-
-  assert(extBBVec.size() == bb_trace_vec.size());
-  assert(bb_trace_vec.size() == extBBT.size());
-  for(int i = 0; i < bb_trace_vec.size(); i++){
-    assert(bb_trace_vec[i].getBBid() == extBBT[i].getBBid());
-    assert(bb_trace_vec[i].getLocations().size()-1 == extBBT[i].getLocations().size());
+  if(simple){
+    auto simpleBBV = getSimpleBBTVec(trace);
+    auto extBBVec = getExtBBVec(bb_vec, simpleBBV);
+    bb_trace_vec = extendBBT(extBBVec);
     
-    for(int j = 0; j < bb_trace_vec[i].getLocations().size()-1; j++){
-      assert(bb_trace_vec[i].getLocations()[j] == extBBT[i].getLocations()[j]);
-
-    }
   }
+  else{
+      auto idFileMap = getIDFileMap(*m);
+      auto oldVec = getBBTraceVec(trace, idFileMap);
+
+      auto simpleBBV = getSimpleBBTVec(trace);
+      auto extBBVec = getExtBBVec(bb_vec, simpleBBV);
+      bb_trace_vec = extendBBT(extBBVec);
+
+      //test the extended version
+      assert(extBBVec.size() == bb_trace_vec.size());
+      assert(bb_trace_vec.size() == oldVec.size());
+      for(int i = 0; i < bb_trace_vec.size(); i++){
+	assert(bb_trace_vec[i].getBBid() == oldVec[i].getBBid());
+	assert(bb_trace_vec[i].getLocations().size() == oldVec[i].getLocations().size()-1);
+	
+	for(int j = 0; j < bb_trace_vec[i].getLocations().size(); j++){
+	  assert(bb_trace_vec[i].getLocations()[j] == oldVec[i].getLocations()[j]);
+	
+	}
+      }
+      
+  }
+    
 
   auto files = getFiles(*m);
 
@@ -292,7 +230,7 @@ int main(int argc, char* argv[]){
   std::map<Instruction*, unsigned long> instrMap;
   if(assInstr || energy) {
     //get the source location -> assembly map
-    theMap = getMap(binary, *m);
+    theMap = getMap(binary, *m, printDisAss);
     instrMap = getInstrMap(*m);
   }
     

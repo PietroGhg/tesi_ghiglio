@@ -129,7 +129,7 @@ FunctionCallee createPrintStack(LLVMContext& CTX, Module& M){
   builder.CreateRet(nullptr);
 
 
-  return std::move(print_stack);
+  return print_stack;
 }
 
 FunctionCallee createPush(LLVMContext& CTX, Module& M){
@@ -171,7 +171,7 @@ FunctionCallee createPush(LLVMContext& CTX, Module& M){
   builder.CreateStore(load_temp, head_var, false);
   builder.CreateRet(nullptr);
 
-  return std::move(push);
+  return push;
 }
 
 FunctionCallee createPop(LLVMContext& CTX, Module& M){
