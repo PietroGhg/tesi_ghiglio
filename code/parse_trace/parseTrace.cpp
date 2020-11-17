@@ -43,6 +43,9 @@ static cl::opt<bool>
 simple("simple", cl::desc("True if trace has been produced with the simple intrumentation and requires expansion"), cl::init(true));
 
 static cl::opt<bool>
+testExp("testExp", cl::desc("Test if the expansion went alright"), cl::init(false));
+
+static cl::opt<bool>
 printCallGr("printCG", cl::desc("Print call graph"), cl::init(false));
 
 static cl::opt<bool>
@@ -201,15 +204,17 @@ int main(int argc, char* argv[]){
       bb_trace_vec = extendBBT(extBBVec);
 
       //test the extended version
-      assert(extBBVec.size() == bb_trace_vec.size());
-      assert(bb_trace_vec.size() == oldVec.size());
-      for(int i = 0; i < bb_trace_vec.size(); i++){
-	assert(bb_trace_vec[i].getBBid() == oldVec[i].getBBid());
-	assert(bb_trace_vec[i].getLocations().size() == oldVec[i].getLocations().size()-1);
-	
-	for(int j = 0; j < bb_trace_vec[i].getLocations().size(); j++){
-	  assert(bb_trace_vec[i].getLocations()[j] == oldVec[i].getLocations()[j]);
-	
+      if(testExp){
+	assert(extBBVec.size() == bb_trace_vec.size());
+	assert(bb_trace_vec.size() == oldVec.size());
+	for(int i = 0; i < bb_trace_vec.size(); i++){
+	  assert(bb_trace_vec[i].getBBid() == oldVec[i].getBBid());
+	  assert(bb_trace_vec[i].getLocations().size() == oldVec[i].getLocations().size()-1);
+	  
+	  for(int j = 0; j < bb_trace_vec[i].getLocations().size(); j++){
+	    assert(bb_trace_vec[i].getLocations()[j] == oldVec[i].getLocations()[j]);
+	    
+	  }
 	}
       }
       
@@ -248,7 +253,7 @@ int main(int argc, char* argv[]){
   //joule as metric
   //180mhz, 5907 microW
   if(energy) {
-    auto costMap = getCostMap(180, 5907, json);
+    auto costMap = getCostMap(json);
     auto scJoule = getJoule(bb_trace_vec, bb_vec, cg ,instrMap, theMap,
 			    costMap, callsites);
     for(auto& f : files){
