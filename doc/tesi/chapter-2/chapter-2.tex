@@ -1,6 +1,6 @@
 \section{Overview}
 
-This section will provide an overview of the state of the art methods to measure, estimate and visualize the energy consumption of software. \par
+This chapter will provide an overview of the state of the art methods to measure, estimate and visualize the energy consumption of software. \par
 In general, there is no unique solution to this problem: the proposed techniques vary by both the applicative domain, the properties of the result and the procedure with which the result is obtained. \par
 For the applicative domains, we have identified three main cases:
 \begin{itemize}
@@ -16,7 +16,38 @@ Measurement-based techniques, instead, can be further sub-grouped in roughly thr
 \item Performance-counter based: some hardware architectures provide special register that store information about the energy consumption, and a set of APIs that allow to read their contents.
 \item Modeling based: some solutions propose to model mathematically the energy behavior of the target architecture, perform some experiments in order to estimate the parameters of the model, and use the model in order to obtain an estimate of the consumed energy.
 \end{itemize} 
-\par The dimensions that we have indicated are not completely orthogonal. In particular, modeling based approaches usually target embedded devices, since they have usually simpler underlying architectures that are inherently simpler to analyze. \newline Performance counter based method, instead, are bound to specific architectures that provide such counters, such as Intel's Running Average Power Limit (RAPL), for their Sandy Bridge architectures, the Intel System Management Controller (SMC) for the Xeon Phi, or NVidia's Nvidia Management Library (NVML), that allows to obatin energy consumption of their GPUs.
+\par The dimensions that we have indicated are not completely orthogonal. In particular, modeling based approaches usually target embedded devices, since they have usually simpler underlying architectures that are inherently simpler to analyze. \newline Performance counter based method, instead, are bound to specific architectures that provide such counters, such as Intel's Running Average Power Limit (RAPL), for their Sandy Bridge architectures, the Intel System Management Controller (SMC) for the Xeon Phi, or NVidia's NVidia Management Library (NVML), that allows to obtain energy consumption of their GPUs.
+
+\section{Simulation}
+
+wattch: architectural simulator that estimates CPU power consumption.
+it provides cycle-level power simulation, which allows to compute maximum and average power consumption, and overall energy consumption.
+parameterizable power model + resource usage counts obtained through cycle-level simulation. more high level than verilog (less accurate, but doesn't require full circuit design and is way faster). uses simplescalar as architectural simulator, providing it power models of the most common structures present in superscalar microprocessors.
+it requires power models of the sub-components of a processor, such as register files, caches, functional units, reservation stations. \\[1in]
+
+\section{Direct measuring}
+
+Directly measuring the current drawn by a device during the program's execution is the method the provides the greatest accuracy, but it's also the one that has the greatest "overhead" for a developer that wants to assess the energy consumption of his software. \newline 
+Given it's accuracy, it is often used as "ground truth" when evaluating the performances of other methods (simulations, performance counter or modeling). 
+\par Experimental setups may differ, depending on the target architecture and the tools at disposal, but they usually consist in a measuring point placed between the device and the power supply. For example in \cite{roth}, they state that their experimental setup consist in a precision current-sense amplifier that amplifies the voltage drop across a shunt resistor, the output signal is then sampled by an Analog to Digital Converter, and sent to a PC. \newline
+Given the measured current, $I$, and the supply voltage $V_{cc}$ the power drawn by the running target is given by $P = I \times V_{cc}$. The total energy consumed is given by $E = P \times T$, where $T$ is the running time, which can be further decomposed in $T = N \times \tau$, where $N$ is the is the number of clock cycles taken by the program, and $\tau$ is the clock period. \cite{tiwari}
+\par In \cite{fahad}, instead, they employed a power meter located between the target's power socket and the A/C outlet, in order to establish the energy consumption of servers running Intel multicore CPUs.
+\par As we said, the main the drawback of directly measuring the energy consumption is the fact that a whole experimental setup is required, with appropriate tools that a software developer may not even have at his disposal. Another drawback of this approach is that it provides only a raw quantity (program X during this run consumed Y Joule), but a software developer may also desire some clues about which source-code entities lead to that energy consumption.
+
+\section{Performance counters}
+Performance counters are a feature of some hardware architectures, that expose some registers that store information about the energy consumption of a program. In the following section we will give an overview of Intel's RAPL as an example of such a feature.
+\par RAPL provides a set of counters providing energy and power information. It is not an analog power meter, but rather uses a software power model that estimates power consumption by means of performance counters and hardware power models \cite{rapl-link}. Basing on \cite{rapl}, this predictions matches actual measurements. The RAPL counters can be accessed by a user by reading appropriate files on the target machine. A typical usage of RAPL is to read the energy measures, perform some actions, and then read again the energy the energy measures, taking the difference between the two readings as the estimate of the consumed energy. 
+\par RAPL provides a fine-grained view of the energy consumption, with respect of the hardware components, offering separate estimates for each of the following domain:
+\begin{itemize}
+\item Package: the whole CPU.
+\item Core: the central components of the CPU, such as ALU, FPU and L1 and L2 cache.
+\item Uncore: components that are shared between cores, such as L3 cache and the memory controller.
+\item DRAM: the main memory.
+\end{itemize}
+A typical use case of RAPL is given in \cite{jrapl}, in which the authors first provide a java library that allows to easily access the RAPL energy estimates, and then use said library to benchmark several data access and data organization patterns, providing some guidelines for application-level energy optimizations.
+
+fahad: comparative study of direct measure vs rapl and direct measure vs prediction based on performance counters for intel multicore cpus.
+use direct measure as ground truth, it shows that both techniques have very high error.\\[1in]
 
 \section{Instruction Level Energy modeling}
 Given a target's Instruction Set Architecture (ISA), an energy model is a model of the energy consumed by each instruction.
@@ -48,20 +79,11 @@ A similar approach can be employed to obtain the costs of other inter-instructio
 The main disadvantage of this approach is that several different programs must be written: for an ISA with $n$ instructions, $\bigO(n)$ programs are required to produce base costs and $\bigO(n^{2})$ for circuit state effects. \newline
 Estimation of other inter-instruction effects also gets more difficult as the complexity of the architecture increases. \par
 On the other hand, this approach has the big advantage of not requiring a model of the circuit of the target processor, information that is often not disclosed by the manufacturing companies.
+\par 
+In \cite{tiwari-group}, the same authors of \cite{tiwari} employ their technique to model the instruction level energy consumption of a Digital Signal Processing (DSP) embedded system. They describe their experimental setup, consisting in a standard, off-the-shelf, dual-slope integrating digital ammeter connected between the power supply and the pins of the DSP chip. They exploit this power model in order to design a scheduling algorithm that minimizes the total energy consumed. \par 
+In this work, they also highlight some practical issues regarding the methodology employed to construct the energy model: impact of operand values and tables size. For the impact of operand values, they propose to make the measurement using a wide a range of operand values, and averaging the consumption values. \par 
+By table size, instead, they mean that the number of experiments that need to be carried out to model all the instruction can be overwhelming, and so they propose to group instructions by similar functionality, assigning an average cost to each group, thus reducing the number of needed experiments. The variation of the energy cost of instructions grouped in this way is around the 5\%. 
 
- M. T.-C. Lee, V. Tiwari, S. Malik, and M. Fujita.
-Power analysis and minimization techniques for
-embedded DSP software 
-technique to group instructions into common classes.
-
-\section{Energy consumption estimation}
-fahad: comparative study of direct measure vs rapl and direct measure vs prediction based on performance counters for intel multicore cpus.
-use direct measure as ground truth, it shows that both techniques have very high error.
-\newline \newline
-wattch: architectural simulator that estimates CPU power consumption.
-it provides cycle-level power simulation, which allows to compute maximum and average power consumption, and overall energy consumption.
-parametrizable power model + resource usage counts obtained through cycle-level simulation. more high level than verilog (less accurate, but doesn't require full circuit design and is way faster). uses simplescalar as architectural simulator, providing it power models of the most common structures present in superscalar microprocessors.
-it requires power models of the subcomponents of a processor, such as register files, caches, functional units, reservation stations. \\[1in]
 
 da leggere less is more\\
 xmos energy model: energy modeling of multi-threaded architecture. context switching has an energy cost. extends tiwari's model by adding thread switching cost. xmprofile software suite: allows to generate load and monitor test executions. tests are generated automatically. generate tests only for instructions with no effects on control flow and no non-deterministic timing.
@@ -101,6 +123,5 @@ Their profiling technique, instead, consist in an instrumentation that outputs t
 rieger-survey: alcuni tool commericali, altra letteratura. molto android/java (ex. powertutor)
 roth: piattaforma hardware per creare energy models + xml dell'energy model per intergrarlo nel loro compilatore, il quale fornisce una stima worst case. \\
 pereira: source level view, statistical method to provide ranking, no energy estimation, just visualization. \\
-jrapl. only intel, code segment granularity. check intel rapl 
 
-
+\section{Source Code-level visualization}
