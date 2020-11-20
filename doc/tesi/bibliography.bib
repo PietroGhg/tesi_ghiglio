@@ -16,6 +16,76 @@
     keywords = "dwarf"
 }
 
+@article{10.1145/342001.339657,
+author = {Brooks, David and Tiwari, Vivek and Martonosi, Margaret},
+title = {Wattch: A Framework for Architectural-Level Power Analysis and Optimizations},
+year = {2000},
+issue_date = {May 2000},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {28},
+number = {2},
+issn = {0163-5964},
+url = {https://doi.org/10.1145/342001.339657},
+doi = {10.1145/342001.339657},
+abstract = {Power dissipation and thermal issues are increasingly significant in modern processors. As a result, it is crucial that power/performance tradeoffs be made more visible to chip architects and even compiler writers, in addition to circuit designers. Most existing power analysis tools achieve high accuracy by calculating power estimates for designs only after layout or floorplanning are complete. In addition to being available only late in the design process, such tools are often quite slow, which compounds the difficulty of running them for a large space of design possibilities.This paper presents Wattch, a framework for analyzing and optimizing microprocessor power dissipation at the architecture-level. Wattch is 1000X or more faster than existing layout-level power tools, and yet maintains accuracy within 10% of their estimates as verified using industry tools on leading-edge designs. This paper presents several validations of Wattch's accuracy. In addition, we present three examples that demonstrate how architects or compiler writers might use Wattch to evaluate power consumption in their design process.We see Wattch as a complement to existing lower-level tools; it allows architects to explore and cull the design space early on, using faster, higher-level tools. It also opens up the field of power-efficient computing to a wider range of researchers by providing a power evaluation methodology within the portable and familiar SimpleScalar framework.},
+journal = {SIGARCH Comput. Archit. News},
+month = may,
+pages = {83–94},
+numpages = {12}
+}
+
+@inproceedings{wattch,
+author = {Brooks, David and Tiwari, Vivek and Martonosi, Margaret},
+title = {Wattch: A Framework for Architectural-Level Power Analysis and Optimizations},
+year = {2000},
+isbn = {1581132328},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/339647.339657},
+doi = {10.1145/339647.339657},
+booktitle = {Proceedings of the 27th Annual International Symposium on Computer Architecture},
+pages = {83-94},
+numpages = {12},
+location = {Vancouver, British Columbia, Canada},
+series = {ISCA '00}
+}
+
+@ARTICLE{simplescalar,  
+author={T. {Austin} and E. {Larson} and D. {Ernst}},  journal={Computer},   
+title={SimpleScalar: an infrastructure for computer system modeling},   year={2002},  
+volume={35},  
+number={2},  
+pages={59-67},  
+doi={10.1109/2.982917}}
+
+@inproceedings{mcpat,
+author = {Li, Sheng and Ahn, Jung Ho and Strong, Richard D. and Brockman, Jay B. and Tullsen, Dean M. and Jouppi, Norman P.},
+title = {McPAT: An Integrated Power, Area, and Timing Modeling Framework for Multicore and Manycore Architectures},
+year = {2009},
+isbn = {9781605587981},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1669112.1669172},
+doi = {10.1145/1669112.1669172},
+booktitle = {Proceedings of the 42nd Annual IEEE/ACM International Symposium on Microarchitecture},
+pages = {469-480},
+numpages = {12},
+location = {New York, New York},
+series = {MICRO 42}
+}
+
+@INPROCEEDINGS{mcpat-valid,  
+author={S. L. {Xi} and H. {Jacobson} and P. {Bose} and G. {Wei} and D. {Brooks}},  
+booktitle={2015 IEEE 21st International Symposium on High Performance Computer Architecture (HPCA)},   
+title={Quantifying sources of error in McPAT and potential impacts on architectural studies},   
+year={2015},  
+volume={},  
+number={},  
+pages={577-589},  
+doi={10.1109/HPCA.2015.7056064}}
+
+
 @inproceedings{roth,
 author = {Roth, Mikko and Luppold, Arno and Falk, Heiko},
 title = {Measuring and Modeling Energy Consumption of Embedded Systems for Optimizing Compilers},
@@ -91,6 +161,24 @@ doi = {10.1109/ICVD.1996.489624}
   number={1},
   pages={123-135},
   doi={10.1109/92.555992}}
+  
+@article{xmos,
+author = {Kerrison, Steve and Eder, Kerstin},
+title = {Energy Modeling of Software for a Hardware Multithreaded Embedded Microprocessor},
+year = {2015},
+issue_date = {May 2015},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {14},
+number = {3},
+issn = {1539-9087},
+url = {https://doi.org/10.1145/2700104},
+doi = {10.1145/2700104},
+journal = {ACM Trans. Embed. Comput. Syst.},
+month = apr,
+articleno = {56},
+numpages = {25},
+keywords = {multithreading, XMOS XS1 xCORE, ISA-level energy modeling, computer architecture, Software energy modeling, embedded systems}}
 
 
 @online{llvm-guidelines,
