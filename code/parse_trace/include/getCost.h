@@ -1,5 +1,6 @@
 #pragma once
 #include "boost/algorithm/string.hpp" //string split
+#include "llvm/IR/Instruction.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DebugInfoMetadata.h" //DISubprogram
@@ -60,6 +61,19 @@ inline void addCost(sourcecost_t& sc, SourceLocation& sourceLoc, double cost){
   if(!sc.insert(std::pair<SourceLocation, double>(sourceLoc, cost)).second){
     sc[sourceLoc] = sc[sourceLoc] +  cost;
   }
+}
+
+inline double getTotalCost(const std::vector<BBTrace>& bbTvec,
+			   const std::vector<BasicBlock*>& bbVec,
+			   std::function<double (Instruction*)> cf){
+  double result = 0;
+  for(auto& bbt : bbTvec){
+    auto bb = bbVec[bbt.getBBid()];
+    for(auto& I : *bb){
+      result += cf(&I);
+    }
+  }
+  return result;
 }
   
 
@@ -124,6 +138,12 @@ inline sourcecost_t getIC(const std::vector<BBTrace>& bbTvec,
   return getCost(bbTvec, bbVec, cg, costF, attributeCallsites);
 }
 
+inline double getTotalLLVM(const std::vector<BBTrace>& bbTvec,
+			   const std::vector<BasicBlock*>& bbVec){
+  auto cf = [](Instruction* I){ return 1; };
+  return getTotalCost(bbTvec, bbVec, cf);
+}
+
 inline sourcecost_t getICAss(const std::vector<BBTrace>& bbTvec, 
 			     const std::vector<BasicBlock*>& bbVec,
 			     const CallGraph& cg,
@@ -136,6 +156,18 @@ inline sourcecost_t getICAss(const std::vector<BBTrace>& bbTvec,
   };
   
   return getCost(bbTvec, bbVec, cg, cf, attributeCallsites);
+}
+
+inline double getTotalAss(const std::vector<BBTrace>& bbTvec, 
+			     const std::vector<BasicBlock*>& bbVec,
+			     std::map<Instruction*, unsigned long>&
+			     instrIndex,
+			     LinesInstr& linesAddr){
+  auto cf = [&instrIndex, &linesAddr](Instruction* I){
+    return linesAddr[instrIndex[I]].size();
+  };
+  
+  return getTotalCost(bbTvec, bbVec, cf);
 }
 
 inline sourcecost_t getJoule(const std::vector<BBTrace>& bbTvec,
@@ -155,5 +187,22 @@ inline sourcecost_t getJoule(const std::vector<BBTrace>& bbTvec,
   };
 
   return getCost(bbTvec, bbVec, cg, cf, attributeCallsites);
+}
+
+inline double getTotalJoule(const std::vector<BBTrace>& bbTvec,
+			     const std::vector<BasicBlock*> bbVec,
+			     std::map<Instruction*, unsigned long>&
+			     instrIndex,
+			     LinesInstr& linesAddr,
+			     costMap_t costMap) {
+  auto cf = [&instrIndex, &linesAddr, &costMap](Instruction* I){
+    double cost = 0;
+    for(auto& assInstr : linesAddr[instrIndex[I]]) {
+	cost += costMap[assInstr.getOperation()];
+    }
+    return cost;
+  };
+
+  return getTotalCost(bbTvec, bbVec, cf);
 }
 			     

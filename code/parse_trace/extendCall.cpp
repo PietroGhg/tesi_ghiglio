@@ -1,6 +1,4 @@
 #include "extendCall.h"
-#include "include/getIC.h"
-#include "include/sourcelocation.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/Casting.h"

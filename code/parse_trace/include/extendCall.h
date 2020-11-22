@@ -2,7 +2,7 @@
 #include <vector>
 #include "llvm/IR/BasicBlock.h"
 #include "sourcelocation.h"
-#include "getIC.h"
+#include "getCost.h"
 
 using namespace llvm;
 using namespace std;

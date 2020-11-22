@@ -18,7 +18,7 @@
 #include "sourcelocation.h"
 #include "callGraph.h"
 #include "map.h"
-#include "getIC.h"
+#include "getCost.h"
 #include "costmap.h"
 #include "extendCall.h"
 
@@ -41,6 +41,9 @@ callsites("callsites", cl::desc("Attribute cost to callsites"), cl::init(false))
 
 static cl::opt<bool>
 simple("simple", cl::desc("True if trace has been produced with the simple intrumentation and requires expansion"), cl::init(true));
+
+static cl::opt<bool>
+total("total", cl::desc("Compute total cost too"), cl::init(true));
 
 static cl::opt<bool>
 testExp("testExp", cl::desc("Test if the expansion went alright"), cl::init(false));
@@ -242,7 +245,10 @@ int main(int argc, char* argv[]){
   if(llvmInstr) {
     auto scIR = getIC(bb_trace_vec, bb_vec, cg, callsites);
     for(auto& f : files){
-      printAnnotatedFile(f, scIR, "llvm instr");
+      printAnnotatedFile(f, scIR, "LLVM instr");
+    }
+    if(total){
+      errs() << "Total LLVM instr: " << getTotalLLVM(bb_trace_vec, bb_vec) << "\n";
     }
   }
 
@@ -267,6 +273,10 @@ int main(int argc, char* argv[]){
     for(auto& f : files){
       printAnnotatedFile(f, scAss, "assembly inst");
     }
+
+    if(total){
+      errs() << "Total assembly instr: " << getTotalAss(bb_trace_vec, bb_vec, instrMap, theMap) << "\n";
+    }
   }
 
   //joule as metric
@@ -277,6 +287,10 @@ int main(int argc, char* argv[]){
 			    costMap, callsites);
     for(auto& f : files){
       printAnnotatedFile(f, scJoule, "microJoule");
+    }
+
+    if(total){
+      errs() << "Total energy: " << getTotalJoule(bb_trace_vec, bb_vec, instrMap, theMap, costMap) << "microJ\n";
     }
   }
 }
