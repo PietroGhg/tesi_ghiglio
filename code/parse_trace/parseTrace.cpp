@@ -19,7 +19,7 @@
 #include "callGraph.h"
 #include "map.h"
 #include "getIC.h"
-#include "parsejson.h"
+#include "costmap.h"
 #include "extendCall.h"
 
 using namespace llvm;
@@ -49,7 +49,7 @@ static cl::opt<bool>
 printCallGr("printCG", cl::desc("Print call graph"), cl::init(false));
 
 static cl::opt<bool>
-printDisAss("printDisAss", cl::desc("Print call graph"), cl::init(false));
+printDisAss("printDisAss", cl::desc("Print disassembly"), cl::init(false));
 
 static cl::opt<std::string>
 module("m", cl::desc("Input module"));
@@ -101,6 +101,22 @@ int getNumLines(std::ifstream& source){
     source.clear();                
     source.seekg(0, std::ios::beg);
     return ris;
+}
+
+void printInstrMap(std::map<Instruction*, unsigned long> instrMap){
+  std::map<unsigned long, Instruction*> reversed;
+  for(auto& el : instrMap)
+    reversed[el.second] = el.first;
+  for(auto& el : reversed){
+    errs() << el.first << ": ";
+    auto& I = *el.second;
+    errs() << I << " ";
+    if(auto loc = I.getDebugLoc()){
+      auto file = I.getParent()->getParent()->getSubprogram()->getFilename();
+      errs() << loc.getLine() << " " << file;
+    }
+    errs() << "\n";
+  }
 }
 
 void printAnnotatedFile(const string& sourcePath,
@@ -232,11 +248,14 @@ int main(int argc, char* argv[]){
 
 
   LinesInstr theMap;
-  std::map<Instruction*, unsigned long> instrMap;
-  if(assInstr || energy) {
+  std::map<Instruction*, unsigned long> instrMap; //instr->id  map
+  if(assInstr || energy || printDisAss) {
     //get the source location -> assembly map
     theMap = getMap(binary, *m, printDisAss);
     instrMap = getInstrMap(*m);
+    if(printDisAss){
+      printInstrMap(instrMap);
+    }
   }
     
 

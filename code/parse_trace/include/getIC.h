@@ -7,7 +7,7 @@
 #include "map.h"
 #include "callGraph.h"
 #include "sourcelocation.h"
-#include "parsejson.h"
+#include "costmap.h"
 
 using namespace llvm;
 
@@ -149,9 +149,7 @@ inline sourcecost_t getJoule(const std::vector<BBTrace>& bbTvec,
   auto cf = [&instrIndex, &linesAddr, &costMap](Instruction* I){
     double cost = 0;
     for(auto& assInstr : linesAddr[instrIndex[I]]) {
-      assert(costMap.find(assInstr.getOperation()) != costMap.end() &&
-	     "cannot find element in cost map");
-      cost += costMap[assInstr.getOperation()];
+	cost += costMap[assInstr.getOperation()];
     }
     return cost;
   };

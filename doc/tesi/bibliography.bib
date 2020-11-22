@@ -16,24 +16,6 @@
     keywords = "dwarf"
 }
 
-@article{10.1145/342001.339657,
-author = {Brooks, David and Tiwari, Vivek and Martonosi, Margaret},
-title = {Wattch: A Framework for Architectural-Level Power Analysis and Optimizations},
-year = {2000},
-issue_date = {May 2000},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-volume = {28},
-number = {2},
-issn = {0163-5964},
-url = {https://doi.org/10.1145/342001.339657},
-doi = {10.1145/342001.339657},
-abstract = {Power dissipation and thermal issues are increasingly significant in modern processors. As a result, it is crucial that power/performance tradeoffs be made more visible to chip architects and even compiler writers, in addition to circuit designers. Most existing power analysis tools achieve high accuracy by calculating power estimates for designs only after layout or floorplanning are complete. In addition to being available only late in the design process, such tools are often quite slow, which compounds the difficulty of running them for a large space of design possibilities.This paper presents Wattch, a framework for analyzing and optimizing microprocessor power dissipation at the architecture-level. Wattch is 1000X or more faster than existing layout-level power tools, and yet maintains accuracy within 10% of their estimates as verified using industry tools on leading-edge designs. This paper presents several validations of Wattch's accuracy. In addition, we present three examples that demonstrate how architects or compiler writers might use Wattch to evaluate power consumption in their design process.We see Wattch as a complement to existing lower-level tools; it allows architects to explore and cull the design space early on, using faster, higher-level tools. It also opens up the field of power-efficient computing to a wider range of researchers by providing a power evaluation methodology within the portable and familiar SimpleScalar framework.},
-journal = {SIGARCH Comput. Archit. News},
-month = may,
-pages = {83–94},
-numpages = {12}
-}
 
 @inproceedings{wattch,
 author = {Brooks, David and Tiwari, Vivek and Martonosi, Margaret},
@@ -178,7 +160,44 @@ journal = {ACM Trans. Embed. Comput. Syst.},
 month = apr,
 articleno = {56},
 numpages = {25},
-keywords = {multithreading, XMOS XS1 xCORE, ISA-level energy modeling, computer architecture, Software energy modeling, embedded systems}}
+keywords = {multithreading, XMOS XS1 xCORE, ISA-level energy modeling, computer architecture, Software energy modeling, embedded systems}
+}
+
+@article{10.1145/384196.384201,
+author = {Lee, Sheayun and Ermedahl, Andreas and Min, Sang Lyul and Chang, Naehyuck},
+title = {An Accurate Instruction-Level Energy Consumption Model for Embedded RISC Processors},
+year = {2001},
+issue_date = {Aug. 2001},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {36},
+number = {8},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/384196.384201},
+doi = {10.1145/384196.384201},
+abstract = {Energy consumption of software is becoming an increasingly important issue in designing mobile embedded systems where batteries are used as the main power source. As a consequence, recently, a number of promising techniques have been proposed to optimize software for reduced energy consumption. Such low-power software techniques require an energy consumption model that can be used to estimate or predict the energy consumed by software. We propose a technique to derive an accurate energy consumption model at the instruction level, combining an empirical method and a statistical analysis technique. The result of the proposed approach is given by a model equation that characterizes energy behavior of software based on the properties of the instructions. Experimental results show that the model equation can accurately estimate the energy consumption of random instruction sequences, with an average error of 2.5%},
+journal = {SIGPLAN Not.},
+month = aug,
+pages = {1–10},
+numpages = {10}
+}
+
+@inproceedings{lee,
+author = {Lee, Sheayun and Ermedahl, Andreas and Min, Sang Lyul and Chang, Naehyuck},
+title = {An Accurate Instruction-Level Energy Consumption Model for Embedded RISC Processors},
+year = {2001},
+isbn = {1581134258},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/384197.384201},
+doi = {10.1145/384197.384201},
+pages = {1-10},
+numpages = {10},
+location = {Snow Bird, Utah, USA},
+series = {LCTES '01}
+}
+
+
 
 
 @online{llvm-guidelines,

@@ -1,4 +1,0 @@
-board: https://www.st.com/en/evaluation-tools/32f469idiscovery.html
-cpu doc: https://developer.arm.com/ip-products/processors/cortex-m/cortex-m4
-cpi: https://developer.arm.com/documentation/100166/0001/Programmers-Model/Instruction-set-summary/Table-of-processor-instructions?lang=en
-download ide: https://www.openstm32.org/Downloading%2Bthe%2BSystem%2BWorkbench%2Bfor%2BSTM32%2Binstaller

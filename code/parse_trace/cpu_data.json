@@ -83,7 +83,7 @@
 	{ "opname": "tbb", "cost": 5},
 	{ "opname": "tbh", "cost": 5},
 	{ "opname": "svc", "cost": 0},
-	{ "opname": "it...", "cost": 1},
+	{ "opname": "it", "cost": 1},
 	{ "opname": "cpsid", "cost": 2},
 	{ "opname": "cpsie", "cost": 2},
 	{ "opname": "mrs", "cost": 2},
