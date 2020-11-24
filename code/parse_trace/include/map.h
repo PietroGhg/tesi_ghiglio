@@ -290,7 +290,10 @@ inline ObjFunction getFun(const std::vector<llvm::object::SymbolRef>& symbols,
       break;
     }
   }
-  assert(it != symbols.end() && "symbol name not found");
+  if(it == symbols.end()){
+    errs() << "Cannot find: " << name << "\n\n";
+    assert(it != symbols.end() && "symbol name not found");
+  }
   
   auto addr = it->getAddress();
   assert(bool(addr) && "current symbols has no address");
@@ -315,12 +318,12 @@ inline ObjFunction getFun(const std::vector<llvm::object::SymbolRef>& symbols,
       std::string s;
       raw_string_ostream rso(s);
       ip.printInst(&inst, instr_addr, "", sti, rso);
-      //check out llvm::raw_string_ostream
       rso.str();
       res.addInst(ObjInstr(instr_addr, size, inst, s));
     }
     else{
-      llvm::errs() << "cannot disasseble instr at " << instr_addr << "\n";
+      llvm::errs() << "cannot disasseble instr at ";
+      errs().write_hex(instr_addr) << "\n";
     }
   }
 

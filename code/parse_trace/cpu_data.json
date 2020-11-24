@@ -1,6 +1,6 @@
 {
-    "freq" : 180.0,
-    "power": 5907.0,
+    "freq" : 168,
+    "power": 167.4,
     "cpi": [
 	{ "opname": "movw", "cost": 1},
 	{ "opname": "movs", "cost": 1},

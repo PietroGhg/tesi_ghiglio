@@ -286,7 +286,7 @@ int main(int argc, char* argv[]){
     auto scJoule = getJoule(bb_trace_vec, bb_vec, cg ,instrMap, theMap,
 			    costMap, callsites);
     for(auto& f : files){
-      printAnnotatedFile(f, scJoule, "microJoule");
+      printAnnotatedFile(f, scJoule, "nanoJoule");
     }
 
     if(total){
