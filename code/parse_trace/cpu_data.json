@@ -15,6 +15,7 @@
 	{ "opname": "rsb", "cost": 1},
 	{ "opname": "mul", "cost": 1},
 	{ "opname": "muls", "cost": 1},
+	{ "opname": "smmla", "cost": 1},
 	{ "opname": "mla", "cost": 1},
 	{ "opname": "mls", "cost": 1},
 	{ "opname": "smull", "cost": 1},

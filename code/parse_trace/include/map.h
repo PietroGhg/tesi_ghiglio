@@ -19,6 +19,7 @@
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Support/TargetRegistry.h"
+
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/Module.h"
 #include <bits/stdint-uintn.h>
@@ -275,8 +276,8 @@ inline uint64_t getEnd(const std::vector<llvm::object::SymbolRef>& symbols,
 
 inline ObjFunction getFun(const std::vector<llvm::object::SymbolRef>& symbols,
 			  const std::string& name,
-			  const llvm::MCDisassembler& DisAsm,
 			  llvm::MCInstPrinter& ip,
+			  const llvm::MCDisassembler& DisAsm,
 			  const llvm::MCSubtargetInfo& sti,
 			  const llvm::ArrayRef<uint8_t>& bytes){
   ObjFunction res(name);
@@ -324,6 +325,9 @@ inline ObjFunction getFun(const std::vector<llvm::object::SymbolRef>& symbols,
     else{
       llvm::errs() << "cannot disasseble instr at ";
       errs().write_hex(instr_addr) << "\n";
+      //TODO: this works only sometimes
+      size = 4;
+      
     }
   }
 
@@ -381,7 +385,7 @@ inline AddrLines getAddrLines(llvm::DWARFContext& DCtx){
 	auto units = DCtx.compile_units();
 	
 
-	for (auto& unit : units){ // TODO: deal with multiple units
+	for (auto& unit : units){ 
 	  const llvm::DWARFDebugLine::LineTable* table =
 	    DCtx.getLineTableForUnit(unit.get());
 	  if(table){
@@ -403,6 +407,8 @@ inline LinesInstr getLinesAddr(const InstrLines& addrs){
   }
   return res;
 }
+
+
 
 
 inline LinesInstr getMap(const std::string& objPath,
@@ -464,7 +470,9 @@ inline LinesInstr getMap(const std::string& objPath,
 								   *AsmInfo,
 								   *MII,
 								   *MRI));
+
   assert(ip && "no instr printer!");
+  
   //end of the boilerplate code
 
   //retrieve the .text section
@@ -482,11 +490,11 @@ inline LinesInstr getMap(const std::string& objPath,
   ObjModule objM;
   for(auto& name : funcNames(m)){
     objM.addFunction(getFun(textSymbols,
-		       name,
-		       *DisAsm,
-		       *ip,
-		       *STI,		      
-		       bytes));
+			    name,
+			    *ip,
+			    *DisAsm,
+			    *STI,		      
+			    bytes));
   }
 		
   //complete the mapping

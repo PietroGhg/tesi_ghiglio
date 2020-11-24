@@ -286,11 +286,11 @@ int main(int argc, char* argv[]){
     auto scJoule = getJoule(bb_trace_vec, bb_vec, cg ,instrMap, theMap,
 			    costMap, callsites);
     for(auto& f : files){
-      printAnnotatedFile(f, scJoule, "nanoJoule");
+      printAnnotatedFile(f, scJoule, "nanoJ");
     }
 
     if(total){
-      errs() << "Total energy: " << getTotalJoule(bb_trace_vec, bb_vec, instrMap, theMap, costMap) << "microJ\n";
+      errs() << "Total energy: " << getTotalJoule(bb_trace_vec, bb_vec, instrMap, theMap, costMap) << "nanoJ\n";
     }
   }
 }
