@@ -211,7 +211,10 @@ int main(int argc, char* argv[]){
   if(simple){
     auto simpleBBV = getSimpleBBTVec(trace);
     auto extBBVec = getExtBBVec(bb_vec, simpleBBV);
-    bb_trace_vec = extendBBT(extBBVec);
+    if(callsites)
+      bb_trace_vec = extendBBT(extBBVec);
+    else
+      bb_trace_vec = simpleBBV;
     
   }
   else{
