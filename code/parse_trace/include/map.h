@@ -274,7 +274,7 @@ inline uint64_t getEnd(const std::vector<llvm::object::SymbolRef>& symbols,
 }
   
 
-inline ObjFunction getFun(const std::vector<llvm::object::SymbolRef>& symbols,
+inline std::pair<ObjFunction,bool> getFun(const std::vector<llvm::object::SymbolRef>& symbols,
 			  const std::string& name,
 			  llvm::MCInstPrinter& ip,
 			  const llvm::MCDisassembler& DisAsm,
@@ -293,7 +293,8 @@ inline ObjFunction getFun(const std::vector<llvm::object::SymbolRef>& symbols,
   }
   if(it == symbols.end()){
     errs() << "Cannot find: " << name << "\n\n";
-    assert(it != symbols.end() && "symbol name not found");
+    //assert(it != symbols.end() && "symbol name not found");
+    return std::pair<ObjFunction, bool>(res, false);
   }
   
   auto addr = it->getAddress();
@@ -331,7 +332,7 @@ inline ObjFunction getFun(const std::vector<llvm::object::SymbolRef>& symbols,
     }
   }
 
-  return res;	
+  return std::pair<ObjFunction, bool>(res,true);	
 }
 
 inline std::vector<llvm::object::SymbolRef> getTextSymbols(const llvm::object::ObjectFile& obj){
@@ -489,12 +490,14 @@ inline LinesInstr getMap(const std::string& objPath,
   //create an ObjFunction for each function in the executable
   ObjModule objM;
   for(auto& name : funcNames(m)){
-    objM.addFunction(getFun(textSymbols,
-			    name,
-			    *ip,
-			    *DisAsm,
-			    *STI,		      
-			    bytes));
+    auto f = getFun(textSymbols,
+		    name,
+		    *ip,
+		    *DisAsm,
+		    *STI,		      
+		    bytes);
+    if(f.second)
+      objM.addFunction(f.first);
   }
 		
   //complete the mapping

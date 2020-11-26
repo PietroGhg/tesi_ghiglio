@@ -11,8 +11,12 @@ ExtendedBB::ExtendedBB(unsigned long id, BasicBlock* BB):
   for(auto& I : *BB){
     if(isa<CallInst>(I) && I.getDebugLoc() && !isa<DbgInfoIntrinsic>(I)){
       auto CI = dyn_cast<CallInst>(&I);
-      SourceLocation loc(CI->getDebugLoc());
-      callSites.push_back(loc);
+      //check if the call is to a function in the CU
+      auto called = CI->getCalledFunction();
+      if(!called->isDeclaration()){
+	SourceLocation loc(CI->getDebugLoc());
+	callSites.push_back(loc);
+      }
     }
   }
 
