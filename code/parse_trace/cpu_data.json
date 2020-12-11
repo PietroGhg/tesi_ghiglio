@@ -126,6 +126,8 @@
 	{ "opname": "bvs", "cost": 4},
 	{ "opname": "bvc", "cost": 4},
 	{ "opname": "bhi", "cost": 4},
-	{ "opname": "bls", "cost": 4}
+	{ "opname": "bls", "cost": 4},
+	{ "opname": "smmul", "cost": 1},
+	{ "opname": "dummy", "cost": 4}
     ]
 }

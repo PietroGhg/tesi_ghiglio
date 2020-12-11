@@ -43,7 +43,7 @@ static cl::opt<bool>
 simple("simple", cl::desc("True if trace has been produced with the simple intrumentation and requires expansion"), cl::init(true));
 
 static cl::opt<bool>
-total("total", cl::desc("Compute total cost too"), cl::init(true));
+total("total", cl::desc("Compute total cost only"), cl::init(false));
 
 static cl::opt<bool>
 testExp("testExp", cl::desc("Test if the expansion went alright"), cl::init(false));
@@ -182,7 +182,7 @@ int main(int argc, char* argv[]){
     return -1;
   }
 
-  if(assInstr && binary.empty()){
+  if((energy || assInstr) && binary.empty()){
     errs() << "assembly instruction requested but no binary provided\n";
     return -1;
   }
@@ -250,9 +250,9 @@ int main(int argc, char* argv[]){
     for(auto& f : files){
       printAnnotatedFile(f, scIR, "LLVM instr");
     }
-    if(total){
-      errs() << "Total LLVM instr: " << getTotalLLVM(bb_trace_vec, bb_vec) << "\n";
-    }
+
+    errs() << "Total LLVM instr: " << getTotalLLVM(bb_trace_vec, bb_vec) << "\n";
+
   }
 
 
@@ -266,6 +266,19 @@ int main(int argc, char* argv[]){
       printInstrMap(instrMap);
     }
   }
+
+  errs() << "Program contains " << bb_vec.size() << " bbs\n";
+  if(total){
+    if(assInstr)
+      errs() << "Total assembly instr: " << getTotalAss(bb_trace_vec, bb_vec, instrMap, theMap) << "\n";
+    if(llvmInstr)
+      errs() << "Total LLVM instr: " << getTotalLLVM(bb_trace_vec, bb_vec) << "\n";
+    if(energy){
+      auto costMap = getCostMap(json);
+      errs() << "Total energy: " << getTotalJoule(bb_trace_vec, bb_vec, instrMap, theMap, costMap) << "nanoJ\n";
+    }
+    return 0;
+  }
     
 
   if(assInstr) {
@@ -277,9 +290,8 @@ int main(int argc, char* argv[]){
       printAnnotatedFile(f, scAss, "assembly inst");
     }
 
-    if(total){
-      errs() << "Total assembly instr: " << getTotalAss(bb_trace_vec, bb_vec, instrMap, theMap) << "\n";
-    }
+    errs() << "Total assembly instr: " << getTotalAss(bb_trace_vec, bb_vec, instrMap, theMap) << "\n";
+
   }
 
   //joule as metric
@@ -292,9 +304,9 @@ int main(int argc, char* argv[]){
       printAnnotatedFile(f, scJoule, "nanoJ");
     }
 
-    if(total){
-      errs() << "Total energy: " << getTotalJoule(bb_trace_vec, bb_vec, instrMap, theMap, costMap) << "nanoJ\n";
-    }
+
+    errs() << "Total energy: " << getTotalJoule(bb_trace_vec, bb_vec, instrMap, theMap, costMap) << "nanoJ\n";
+
   }
 }
 

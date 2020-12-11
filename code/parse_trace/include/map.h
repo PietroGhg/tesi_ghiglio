@@ -328,7 +328,8 @@ inline std::pair<ObjFunction,bool> getFun(const std::vector<llvm::object::Symbol
       errs().write_hex(instr_addr) << "\n";
       //TODO: this works only sometimes
       size = 4;
-      
+      std::string s("dummy");
+      res.addInst(ObjInstr(instr_addr, size, inst, s));
     }
   }
 

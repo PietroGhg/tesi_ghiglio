@@ -10,6 +10,7 @@
 #include "sourcelocation.h"
 #include "costmap.h"
 
+
 using namespace llvm;
 
 class BBTrace{
@@ -66,6 +67,8 @@ inline void addCost(sourcecost_t& sc, SourceLocation& sourceLoc, double cost){
 inline double getTotalCost(const std::vector<BBTrace>& bbTvec,
 			   const std::vector<BasicBlock*>& bbVec,
 			   std::function<double (Instruction*)> cf){
+  errs() << "Parsing trace of " << bbTvec.size() << " elems\n";
+
   double result = 0;
   for(auto& bbt : bbTvec){
     auto bb = bbVec[bbt.getBBid()];
