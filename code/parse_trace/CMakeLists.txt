@@ -5,6 +5,9 @@ find_package(LLVM REQUIRED CONFIG)
 
 SET(CMAKE_CXX_COMPILER /home/pietro/llvm/bin/clang++)
 #SET(CMAKE_CXX_FLAGS "-fsanitize=address -fno-omit-frame-pointer")
+#SET(CMAKE_CXX_FLAGS "-fsanitize=memory -fno-omit-frame-pointer")
+#SET(CMAKE_CXX_FLAGS "-fsanitize=undefined -fno-omit-frame-pointer")
+
 
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(${LLVM_INCLUDE_DIRS})

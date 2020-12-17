@@ -64,6 +64,9 @@ static cl::opt<std::string>
 trace("t", cl::desc("Trace file"));
 
 static cl::opt<std::string>
+count("c", cl::desc("Basic block counts file"));
+
+static cl::opt<std::string>
 json("json", cl::desc("json cpu description"));
 
 
@@ -82,6 +85,17 @@ std::vector<BBTrace> getBBTraceVec(const std::string& path,
     }
     f.close();
     return result;  
+}
+
+inline std::vector<uint64_t> getCountVec(const std::string& path){
+  std::vector<uint64_t> res;
+  std::fstream f;
+  f.open(path, fstream::in);
+  std::string line;
+  while(std::getline(f, line)){
+    res.push_back(std::stoul(line));
+  }
+  return res;
 }
 
 //! Function that returns a vector of all the basic blocks in the module
@@ -192,8 +206,13 @@ int main(int argc, char* argv[]){
     return -1;
   }
   
-  if(trace.empty()){
-    errs() << "no trace specified, exiting\n";
+  if(trace.empty() || ::count.empty()){
+    errs() << "no trace or count file specified, exiting\n";
+    return -1;
+  }
+
+  if(trace.empty() && callsites){
+    errs() << "callsites requested but no trace file provided\n";
     return -1;
   }
   LLVMContext c;
@@ -212,9 +231,9 @@ int main(int argc, char* argv[]){
     auto simpleBBV = getSimpleBBTVec(trace);
     auto extBBVec = getExtBBVec(bb_vec, simpleBBV);
     if(callsites)
-      bb_trace_vec = extendBBT(extBBVec);
+      bb_trace_vec = std::move(extendBBT(extBBVec));
     else
-      bb_trace_vec = simpleBBV;
+      bb_trace_vec = std::move(simpleBBV);
     
   }
   else{
@@ -223,7 +242,7 @@ int main(int argc, char* argv[]){
 
       auto simpleBBV = getSimpleBBTVec(trace);
       auto extBBVec = getExtBBVec(bb_vec, simpleBBV);
-      bb_trace_vec = extendBBT(extBBVec);
+      bb_trace_vec = std::move(extendBBT(extBBVec));
 
       //test the extended version
       if(testExp){
@@ -267,7 +286,7 @@ int main(int argc, char* argv[]){
     }
   }
 
-  errs() << "Program contains " << bb_vec.size() << " bbs\n";
+  
   if(total){
     if(assInstr)
       errs() << "Total assembly instr: " << getTotalAss(bb_trace_vec, bb_vec, instrMap, theMap) << "\n";
@@ -280,34 +299,50 @@ int main(int argc, char* argv[]){
     return 0;
   }
     
+  if(!trace.empty()) {
+    if(assInstr) {
+      //get the map using assembly ic as metric
+      auto scAss = getICAss(bb_trace_vec, bb_vec, cg, instrMap, theMap, callsites);
 
-  if(assInstr) {
-    //get the map using assembly ic as metric
-    auto scAss = getICAss(bb_trace_vec, bb_vec, cg, instrMap, theMap, callsites);
+      //print the annotated files
+      for(auto& f : files){
+	printAnnotatedFile(f, scAss, "assembly inst");
+      }
 
-    //print the annotated files
-    for(auto& f : files){
-      printAnnotatedFile(f, scAss, "assembly inst");
+      errs() << "Total assembly instr: " << getTotalAss(bb_trace_vec, bb_vec, instrMap, theMap) << "\n";
+
     }
 
-    errs() << "Total assembly instr: " << getTotalAss(bb_trace_vec, bb_vec, instrMap, theMap) << "\n";
+    //joule as metric
+    //180mhz, 5907 microW
+    if(energy) {
+      auto costMap = getCostMap(json);
+      auto scJoule = getJoule(bb_trace_vec, bb_vec, cg ,instrMap, theMap,
+			      costMap, callsites);
+      for(auto& f : files){
+	printAnnotatedFile(f, scJoule, "nanoJ");
+      }
 
-  }
 
-  //joule as metric
-  //180mhz, 5907 microW
-  if(energy) {
+      errs() << "Total energy: " << getTotalJoule(bb_trace_vec, bb_vec, instrMap, theMap, costMap) << "nanoJ\n";
+
+    }
+  }//endif
+
+  if(!::count.empty()){
+    auto cv = getCountVec(::count);
     auto costMap = getCostMap(json);
-    auto scJoule = getJoule(bb_trace_vec, bb_vec, cg ,instrMap, theMap,
-			    costMap, callsites);
-    for(auto& f : files){
-      printAnnotatedFile(f, scJoule, "nanoJ");
-    }
+    auto f =[&instrMap, &theMap, &costMap](Instruction* I){
+      double cost = 0;
+      for(auto& assInstr : theMap[instrMap[I]]) {
+	cost += costMap[assInstr.getOperation()];
+      }
+      return cost;
+    };
 
 
-    errs() << "Total energy: " << getTotalJoule(bb_trace_vec, bb_vec, instrMap, theMap, costMap) << "nanoJ\n";
-
-  }
+    errs() << "\n" << "total: " << getTotalCost(bb_vec, cv, f) << "\n";
+  }//end if
 }
 
 

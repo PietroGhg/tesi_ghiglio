@@ -5,6 +5,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DebugInfoMetadata.h" //DISubprogram
 #include <functional> //std::function
+#include <numeric> //std::accumulate
 #include "map.h"
 #include "callGraph.h"
 #include "sourcelocation.h"
@@ -94,11 +95,11 @@ inline sourcecost_t getCost(const std::vector<BBTrace>& bbTvec,
   edge_t in_edge;
 
   for(auto bbt : bbTvec){
-    for(auto& i : *bbVec[bbt.getBBid()]){
+    errs() << "bb: " << bbt.getBBid() << "\n";
+    for(auto& i : *bbVec[bbt.getBBid()]){      
       SourceLocation funcLocation(i.getParent()->getParent()->getSubprogram());
       curr_node = main_node;
       auto loc = i.getDebugLoc();
-      auto locations = bbt.getLocations();
       auto cost = costFunction(&i);
       if(loc){
 	SourceLocation sourceLoc(loc.get());
@@ -113,6 +114,7 @@ inline sourcecost_t getCost(const std::vector<BBTrace>& bbTvec,
       
       //assign the cost to the callsites
       if(attributeCallsites) {
+	auto locations = bbt.getLocations();
 	for(auto loc_it = locations.rbegin();
 	    loc_it != locations.rend(); loc_it++){
 	  if(cg[curr_node].f->getName() == "main"){
@@ -207,5 +209,48 @@ inline double getTotalJoule(const std::vector<BBTrace>& bbTvec,
   };
 
   return getTotalCost(bbTvec, bbVec, cf);
+}			     
+
+
+
+inline sourcecost_t getCost(std::vector<BasicBlock*>& bbVec,
+			    std::vector<uint64_t>& counts,
+			    std::function<double (Instruction*)> costFunction){
+  assert(bbVec.size() == counts.size() && "Size mismatch in count");
+  sourcecost_t sc;
+  for(int i = 0; i < bbVec.size(); i++){
+    auto bb = bbVec[i];
+    auto count = counts[i];
+    errs() << count << "\n";
+    SourceLocation funcLoc(bb->getParent()->getSubprogram());
+    for(auto& I : *bb){
+      auto cost = costFunction(&I);
+      if(auto loc = I.getDebugLoc()){
+	SourceLocation sourceLoc(loc.get());
+	addCost(sc, sourceLoc, double(count)*cost);
+      }
+      else{
+	addCost(sc, funcLoc, double(count)*cost);
+      }
+    }
+  }
+
+  return sc;
 }
-			     
+
+inline double getTotalCost(std::vector<BasicBlock*>& bbVec,
+			   std::vector<uint64_t>& counts,
+			   std::function<double (Instruction*)> costFunction){
+  assert(bbVec.size() == counts.size() && "Size mismatch in count");
+  double result = 0;
+  
+  for(auto p : zip(bbVec, counts)){
+    auto& [bb, count] = p;
+    for(auto& I : *bb){
+      auto cost = costFunction(&I);
+      //errs() << cost << "\n";
+      result += double(count)*cost;
+    }
+  }
+  return result;
+}
