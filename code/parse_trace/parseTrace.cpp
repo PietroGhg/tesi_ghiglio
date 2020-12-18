@@ -206,7 +206,7 @@ int main(int argc, char* argv[]){
     return -1;
   }
   
-  if(trace.empty() || ::count.empty()){
+  if(trace.empty() && ::count.empty()){
     errs() << "no trace or count file specified, exiting\n";
     return -1;
   }
@@ -227,6 +227,7 @@ int main(int argc, char* argv[]){
   auto bb_vec = getBBvec(m.get());
   vector<BBTrace> bb_trace_vec;
 
+  if(!trace.empty()){
   if(simple){
     auto simpleBBV = getSimpleBBTVec(trace);
     auto extBBVec = getExtBBVec(bb_vec, simpleBBV);
@@ -260,6 +261,7 @@ int main(int argc, char* argv[]){
       }
       
   }
+  }//end if(!trace.empty())
     
 
   auto files = getFiles(*m);
@@ -288,14 +290,31 @@ int main(int argc, char* argv[]){
 
   
   if(total){
-    if(assInstr)
-      errs() << "Total assembly instr: " << getTotalAss(bb_trace_vec, bb_vec, instrMap, theMap) << "\n";
-    if(llvmInstr)
-      errs() << "Total LLVM instr: " << getTotalLLVM(bb_trace_vec, bb_vec) << "\n";
-    if(energy){
-      auto costMap = getCostMap(json);
-      errs() << "Total energy: " << getTotalJoule(bb_trace_vec, bb_vec, instrMap, theMap, costMap) << "nanoJ\n";
+    if(!trace.empty()){
+      if(assInstr)
+	errs() << "Total assembly instr: " << getTotalAss(bb_trace_vec, bb_vec, instrMap, theMap) << "\n";
+      if(llvmInstr)
+	errs() << "Total LLVM instr: " << getTotalLLVM(bb_trace_vec, bb_vec) << "\n";
+      if(energy){
+	auto costMap = getCostMap(json);
+	errs() << "Total energy: " << getTotalJoule(bb_trace_vec, bb_vec, instrMap, theMap, costMap) << "nanoJ\n";
+      }
     }
+
+    if(!::count.empty()){
+      auto cv = getCountVec(::count);
+      auto costMap = getCostMap(json);
+      auto f =[&instrMap, &theMap, &costMap](Instruction* I){
+	double cost = 0;
+	for(auto& assInstr : theMap[instrMap[I]]) {
+	  cost += costMap[assInstr.getOperation()];
+	}
+	return cost;
+      };
+
+
+      errs() << "\n" << "total: " << getTotalCost(bb_vec, cv, f) << "\n";
+    }//end if
     return 0;
   }
     
@@ -328,21 +347,6 @@ int main(int argc, char* argv[]){
 
     }
   }//endif
-
-  if(!::count.empty()){
-    auto cv = getCountVec(::count);
-    auto costMap = getCostMap(json);
-    auto f =[&instrMap, &theMap, &costMap](Instruction* I){
-      double cost = 0;
-      for(auto& assInstr : theMap[instrMap[I]]) {
-	cost += costMap[assInstr.getOperation()];
-      }
-      return cost;
-    };
-
-
-    errs() << "\n" << "total: " << getTotalCost(bb_vec, cv, f) << "\n";
-  }//end if
 }
 
 
