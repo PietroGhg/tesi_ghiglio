@@ -1,0 +1,16 @@
+gemver 300 10
+5.175929e+08nanoJ
+inizio: 4s 153ms 0.2780407 J
+fine: 12s 194ms  1.726555 J
+delta: 1.4485143
+
+syrk 5x5 150 stack
+3.267328e+06nanoJ
+inizio: 3s 76ms 0.1135206 J
+fine: 13s 700ms 2.030893 J
+
+symm 5x5 100 stack
+1.885465e+08nanoJ
+inizio: 4s 104ms 0.2094945 J
+fine: 6s 427ms 0.6559268 J
+delta: 0.4464323 J 

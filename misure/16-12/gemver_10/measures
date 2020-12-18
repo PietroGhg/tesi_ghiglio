@@ -1,0 +1,49 @@
+gemver 10 100
+start 6.747, 0.7462776
+end 6.872, 0.7684641
+delta
+
+gemver 10 200
+start 6.562, 0.7484319
+end 6.800, 0.7909374
+delta
+
+gemver 10 300
+start 7.118, 0.7476382
+end 7.473, 0.8108674
+delta
+
+gemver 10 400
+start 6.840, 0.7471714
+end 7.325, 0.8336004
+delta
+
+gemver 10 500
+start 7.468, 0.7504563
+end 8.066, 0.8570615
+delta
+
+gemver 10 600
+start 6.693, 0.7482442
+end 7.408, 0.8757031
+delta
+
+gemver 10 700
+start 7.133, 0.7473838
+end 7.961, 0.8946913
+delta
+
+gemver 10 800
+start 7.256, 0.7482027
+end 8.203, 0.9167837
+delta
+
+gemver 10 900
+start 7.011, 0.7465245
+end 8.088, 0.9382096
+delta
+
+gemver 10 1000
+start 7.807, 0.7602617
+end 8.997, 0.9731829
+delta
