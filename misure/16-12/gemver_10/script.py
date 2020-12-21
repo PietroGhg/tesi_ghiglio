@@ -25,15 +25,32 @@ for l in lines:
         pass
     i = i + 1
 
-    """
-for k in res:
-    pyplot.plot(k,res[k], 'go--', linewidth=2, markersize=12)
-"""
 k = list(res.keys())
 v = list(res.values())
-print(k)
-print(v)
+
+pyplot.subplot(2,1,1)
 pyplot.plot(k,v)
 
+est = dict({100: 0.01115136,
+            200: 0.02230266,
+            300: 0.03345396,
+            400: 0.04460526,
+            500: 0.05575656,
+            600: 0.06690786,
+            700: 0.07805916,
+            800: 0.08921046,
+            900: 0.1003618,
+            1000: 0.115131})
+k2 = list(est.keys())
+v2 = list(est.values())
 
+pyplot.plot(k2,v2,"g")
+
+ratios = [ e / m for [m,e] in zip(v,v2)]
+
+pyplot.subplot(2,1,2)
+pyplot.plot(k2, ratios)
+
+
+            
 pyplot.show()
