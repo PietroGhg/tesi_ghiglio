@@ -1,0 +1,44 @@
+gesumm 10 200
+start 6.610, 0.7302343
+end 6.828, 0.7679843
+delta
+
+gesumm 10 300
+start 7.019, 0.7305527
+end 7.361, 0.7900118
+delta
+
+gesumm 10 400
+start 7.692, 0.7311674
+end 8.018, 0.8050142
+delta
+
+gesumm 10 500
+start 6.689, 0.7304967
+end 7.245, 0.826999
+delta
+
+gesumm 10 600
+start 6.691, 0.7311628
+end 7.362, 0.8478635
+delta
+
+gesumm 10 700
+start 6.745, 0.7321281
+end 7.518, 0.8666447
+delta
+
+gesumm 10 800
+start 7.673, 0.735593
+end 8.553, 0.889535
+delta
+
+gesumm 10 900
+start 6.656, 0.7318945
+end 7.651, 0.9051442
+delta
+
+gesumm 10 1000
+start 6.564, 0.7326625
+end 7.675, 0.9264344
+delta
