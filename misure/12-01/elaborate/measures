@@ -1,0 +1,89 @@
+gemver 10 900
+start 6.188, 0.7504938
+end 7.254 0.940837
+delta
+
+gesummv 10 900
+start 6.557, 0.7321464
+end 7.552, 0.9036836
+delta
+
+symm 10 100
+start 6.833, 0.7514795
+end 23.488, 3.898244
+delta
+
+syr2k 10 900
+start 6.660, 0.7381562
+end 9.390, 1.223473
+delta
+
+syrk 10 900
+start 4.520, 0.5681091
+end 6.147, 0.8568118
+delta
+
+trmm 10 900
+start 5.689, 0.7255915
+end 7.776, 1.093718
+delta
+
+atax 10 900
+start 5.979, 0.7423983
+end 6.631, 0.8572197
+delta
+
+2mm 100 1
+start 6.035, 0.7406851
+end 9.954, 1.457886
+delta
+
+3mm 100 1
+start 5.923, 0.7433409
+end 11.595, 1.787881
+delta
+
+gemver 300 1
+start 5.744, 0.7343303
+end 6.591, 0.8855112
+delta
+
+gemver 320 1
+start 5.724, 0.7296843
+end 6.58, 0.8828165
+delta
+
+gemver 340 1
+start 5.574, 0.7359759
+end 6.650, 0.9281837
+delta
+
+gemver 360 1
+start 5.308, 0.7346392
+end 6.509, 0.9490164
+delta
+
+gesummv 300 1
+start 5.697, 0.7509671
+end 6.512, 0.889182
+delta
+
+symm 100 1
+start 6.711, 0.7407005
+end 8.141, 1.004079
+delta
+
+syr2k 100 1
+start 6.248, 0.7464134
+end 7.924, 1.052537
+delta
+
+syrk 100 1
+start 4.807, 0.5600485
+end 5.732, 0.7277243
+delta
+
+trmm 150 1
+start 5.824, 0.7248812
+end 7.959, 1.127035
+delta
