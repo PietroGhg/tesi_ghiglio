@@ -1,44 +1,44 @@
-gemver 10
+gemver 10 900
 start 6.188, 0.7504938
 end 7.254 0.940837
 delta
 
-gesummv 10
+gesummv 10 900
 start 6.557, 0.7321464
 end 7.552, 0.9036836
 delta
 
-symm 10
+symm 10 100
 start 6.833, 0.7514795
 end 23.488, 3.898244
 delta
 
-syr2k 10
+syr2k 10 900
 start 6.660, 0.7381562
 end 9.390, 1.223473
 delta
 
-syrk
+syrk 10 900
 start 4.520, 0.5681091
 end 6.147, 0.8568118
 delta
 
-trmm
+trmm 10 900
 start 5.689, 0.7255915
 end 7.776, 1.093718
 delta
 
-atax
+atax 10 900
 start 5.979, 0.7423983
 end 6.631, 0.8572197
 delta
 
-2mm
+2mm 100 1
 start 6.035, 0.7406851
 end 9.954, 1.457886
 delta
 
-3mm
+3mm 100 1
 start 5.923, 0.7433409
 end 11.595, 1.787881
 delta
