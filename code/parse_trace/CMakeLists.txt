@@ -39,10 +39,11 @@ add_executable(parsetrace
   sourcelocation.cpp
   extendCall.cpp
   costmap.cpp
+  getCost.cpp
 )
 
 
 target_link_libraries(parsetrace ${llvm_libs} jsoncpp)
 target_compile_options(parsetrace PUBLIC -O2 -g -fno-rtti)
-set_property(TARGET parsetrace PROPERTY CXX_STANDARD 14)
+set_property(TARGET parsetrace PROPERTY CXX_STANDARD 17)
 set_property(TARGET parsetrace PROPERTY CXX_STANDARD_REQUIRED ON)

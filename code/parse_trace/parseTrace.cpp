@@ -54,6 +54,9 @@ printCallGr("printCG", cl::desc("Print call graph"), cl::init(false));
 static cl::opt<bool>
 printDisAss("printDisAss", cl::desc("Print disassembly"), cl::init(false));
 
+static cl::opt<bool>
+countInstr("countInstr", cl::desc("Counts executed assembly instrs"), cl::init(false));
+
 static cl::opt<std::string>
 module("m", cl::desc("Input module"));
 
@@ -279,7 +282,7 @@ int main(int argc, char* argv[]){
 
   LinesInstr theMap;
   std::map<Instruction*, unsigned long> instrMap; //instr->id  map
-  if(assInstr || energy || printDisAss) {
+  if(assInstr || energy || printDisAss || countInstr) {
     //get the source location -> assembly map
     theMap = getMap(binary, *m, printDisAss);
     instrMap = getInstrMap(*m);
@@ -288,6 +291,21 @@ int main(int argc, char* argv[]){
     }
   }
 
+  if(countInstr){
+    using pairOU = pair<string, unsigned long>;
+    auto cv = getCountVec(::count);
+    auto m = getInstrCount(bb_vec, cv, instrMap, theMap);
+    vector<pairOU> vec;
+    for(auto& el : m){
+      vec.push_back(el);
+    }
+    std::sort(vec.begin(), vec.end(), [](pairOU& p1, pairOU& p2){
+      return p1.second > p2.second;
+    });
+    for(auto& el : vec){
+      errs() << el.first << " " << el.second << "\n";
+    }
+  }
   
   if(total){
     if(!trace.empty()){
