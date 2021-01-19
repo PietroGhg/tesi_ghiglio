@@ -27,7 +27,7 @@ for l in lines:
         pass
     i = i + 1
 
-file2 = open('estimates')
+file2 = open('estimates2')
 lines = file2.readlines()
 file2.close()
 est = dict()

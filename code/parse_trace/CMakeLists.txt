@@ -44,6 +44,6 @@ add_executable(parsetrace
 
 
 target_link_libraries(parsetrace ${llvm_libs} jsoncpp)
-target_compile_options(parsetrace PUBLIC -O2 -g -fno-rtti)
+target_compile_options(parsetrace PUBLIC -g -fno-rtti)
 set_property(TARGET parsetrace PROPERTY CXX_STANDARD 17)
 set_property(TARGET parsetrace PROPERTY CXX_STANDARD_REQUIRED ON)

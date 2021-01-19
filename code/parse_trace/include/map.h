@@ -77,6 +77,10 @@ public:
     return splitted[0];
   }
 
+  const MCInst& getMCInstr() const {
+    return inst;
+  }
+
   void dump(){
     errs() << "addr: ";
     errs().write_hex(addr) << " ";
@@ -292,7 +296,7 @@ inline std::pair<ObjFunction,bool> getFun(const std::vector<llvm::object::Symbol
     }
   }
   if(it == symbols.end()){
-    errs() << "Cannot find: " << name << "\n\n";
+    //errs() << "Cannot find: " << name << "\n\n";
     //assert(it != symbols.end() && "symbol name not found");
     return std::pair<ObjFunction, bool>(res, false);
   }
@@ -311,8 +315,9 @@ inline std::pair<ObjFunction,bool> getFun(const std::vector<llvm::object::Symbol
   addrDotText = dotText.get()->getAddress();
 
   uint64_t size;
-  llvm::MCInst inst;
+
   for(uint64_t index = 0; index < (end - addr.get()); index += size){
+    llvm::MCInst inst;
     auto instr_addr = addr.get() + index;
     auto b = bytes.slice((addr.get() - addrDotText) + index);
     auto status = DisAsm.getInstruction(inst, size, b, instr_addr, llvm::errs());
@@ -343,7 +348,7 @@ inline std::vector<llvm::object::SymbolRef> getTextSymbols(const llvm::object::O
 	  {
 	    auto sect = symbol.getSection();
 	    if(bool(sect)){
-	      auto name = sect.get()->getName();
+	      //auto name = sect.get()->getName();
 	      if (isDotText(*(sect.get()))){
 		textSymbols.push_back(symbol);
 	      }
@@ -455,9 +460,10 @@ inline LinesInstr getMap(const std::string& objPath,
   MCObjectFileInfo MOFI;
   MCContext Ctx(AsmInfo.get(), MRI.get(), &MOFI);
 	
-  // MCDisassembler
+  //Retrieve features
+  SubtargetFeatures Features = Obj->getFeatures();
   std::unique_ptr<const MCSubtargetInfo> STI(
-					     theTarget->createMCSubtargetInfo(theTriple.getTriple(), "", ""));
+					     theTarget->createMCSubtargetInfo(theTriple.getTriple(), "", Features.getString()));
   assert(STI && "no STI");
   std::unique_ptr<MCDisassembler> DisAsm(
 					 theTarget->createMCDisassembler(*STI, Ctx));

@@ -3,11 +3,17 @@
 #include <fstream>
 #include <assert.h>
 #include <map>
+#include <memory>
 #include <vector>
+#include "llvm/MC/MCSchedule.h"
+#include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/MC/MCInstrInfo.h"
+#include "llvm/MC/MCInst.h"
 #include "llvm/Support/raw_ostream.h"
 #include <boost/algorithm/string/predicate.hpp> //endswith
 
 using namespace std;
+using namespace llvm;
 
 class CostMap {
 private:
@@ -48,3 +54,17 @@ inline costMap_t getCostMap(string path) {
 
   return cm;
 }
+
+class STICost {
+private:
+  unique_ptr<const MCSubtargetInfo> STI;
+  unique_ptr<const MCInstrInfo> MCII;
+  double freq;
+  double power;
+public:
+  STICost(const MCSubtargetInfo* sti, const MCInstrInfo* mcii, double freq, double power);
+  unsigned getLatency(const MCInst& I);
+  double getCost(const MCInst& I);
+};
+
+STICost initSTICost(const string& objPath, const string& jsonPath);

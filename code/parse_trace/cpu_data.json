@@ -130,6 +130,9 @@
 	{ "opname": "bhi", "cost": 4},
 	{ "opname": "bls", "cost": 4},
 	{ "opname": "smmul", "cost": 1},
+	{ "opname": "vmov", "cost": 2},
+	{ "opname": "vstr", "cost": 3},
+	{ "opname": "vldr", "cost": 3},
 	{ "opname": "dummy", "cost": 4}
     ]
 }

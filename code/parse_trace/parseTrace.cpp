@@ -332,6 +332,16 @@ int main(int argc, char* argv[]){
 
 
       errs() << "\n" << "total: " << getTotalCost(bb_vec, cv, f) << "\n";
+
+      //TODO: remove this
+      /*auto stic = initSTICost(binary, json);
+      auto jsonc = getCostMap(json);
+      for(auto& el : theMap){
+	for(auto& instr : el.second){
+	  errs() << "json: " << jsonc[instr.getOperation()] << " ";
+	  errs() << "llvm: " << stic.getCost(instr.getMCInstr()) << "\n";
+	}
+      }*/
     }//end if
     return 0;
   }
