@@ -419,6 +419,7 @@ inline LinesInstr getLinesAddr(const InstrLines& addrs){
 
 
 inline LinesInstr getMap(const std::string& objPath,
+			 const std::string& MCPU,
 			 const Module& m,
 			 bool printDisAss){
   //a lot of boilerplate to instantiate all the objects needed for the disassembly
@@ -463,7 +464,7 @@ inline LinesInstr getMap(const std::string& objPath,
   //Retrieve features
   SubtargetFeatures Features = Obj->getFeatures();
   std::unique_ptr<const MCSubtargetInfo> STI(
-					     theTarget->createMCSubtargetInfo(theTriple.getTriple(), "", Features.getString()));
+					     theTarget->createMCSubtargetInfo(theTriple.getTriple(), MCPU, Features.getString()));
   assert(STI && "no STI");
   std::unique_ptr<MCDisassembler> DisAsm(
 					 theTarget->createMCDisassembler(*STI, Ctx));

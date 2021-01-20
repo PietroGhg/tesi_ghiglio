@@ -156,7 +156,7 @@ sourcecost_t getJoule(const std::vector<BBTrace>& bbTvec,
   auto cf = [&instrIndex, &linesAddr, &costMap](Instruction* I){
     double cost = 0;
     for(auto& assInstr : linesAddr[instrIndex[I]]) {
-	cost += costMap[assInstr.getOperation()];
+      cost += costMap.getCost(assInstr);
     }
     return cost;
   };
@@ -173,7 +173,7 @@ double getTotalJoule(const std::vector<BBTrace>& bbTvec,
   auto cf = [&instrIndex, &linesAddr, &costMap](Instruction* I){
     double cost = 0;
     for(auto& assInstr : linesAddr[instrIndex[I]]) {
-	cost += costMap[assInstr.getOperation()];
+      cost += costMap.getCost(assInstr);
     }
     return cost;
   };

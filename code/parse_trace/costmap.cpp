@@ -10,7 +10,32 @@
 #include "llvm/Support/TargetSelect.h"
 #include <boost/algorithm/string/predicate.hpp>
 
-double& CostMap::operator[](const string& name){
+costMap_t getCostMap(string path) {
+  fstream f(path);
+  assert(f.is_open() && "no json file.");
+  Json::Value root;
+  f >> root;
+  auto freq = root["freq"].asDouble();
+  auto power = root["power"].asDouble();
+  auto iiOver = root["iiover"].asDouble();
+  auto cpiVec = root["cpi"];
+  costMap_t cm(iiOver);
+
+  for(auto& entry : cpiVec){
+    auto name = entry["opname"].asString();
+    double cpi = entry["cost"].asDouble();
+    double cost = cpi*power/freq;
+    cm.insert(name, cost);
+  }
+
+  return cm;
+}
+
+double CostMap::getCost(const ObjInstr& i){
+  return operator[](i.getOperation()) + iiOver;
+}
+
+const double& CostMap::operator[](const string& name){
   auto it = cm.find(name);
   bool found = it != cm.end();
   if(found)
@@ -19,7 +44,7 @@ double& CostMap::operator[](const string& name){
   return fallback(name);
 }
 
-double& CostMap::fallback(const string& name){
+const double& CostMap::fallback(const string& name){
   /*if(boost::algorithm::starts_with(name, "v")){
     return operator[](name.substr(1, name.size()));    
   }*/
@@ -49,7 +74,8 @@ bool CostMap::isConditional(const string& name){
   return false;
 }
 
-unsigned STICost::getLatency(const MCInst& I){
+int STICost::getLatency(const MCInst& I){
+  //Taken from llvm-mca
   const MCInstrDesc &MCDesc = MCII->get(I.getOpcode());
   const MCSchedModel &SM = STI->getSchedModel();
 
@@ -63,16 +89,16 @@ unsigned STICost::getLatency(const MCInst& I){
 
   const MCSchedClassDesc &SCDesc = *SM.getSchedClassDesc(SchedClassID);
   unsigned NumMicroOpcodes = SCDesc.NumMicroOps;
-  unsigned Latency = MCSchedModel::computeInstrLatency(*STI, SCDesc);
+  int Latency = MCSchedModel::computeInstrLatency(*STI, SCDesc);
   // Add extra latency due to delays in the forwarding data paths.
   Latency += MCSchedModel::getForwardingDelayCycles(
-						    STI->getReadAdvanceEntries(SCDesc));
+    STI->getReadAdvanceEntries(SCDesc));
 
   return Latency;
 }
 
 double STICost::getCost(const MCInst& I){
-  return freq*power*(double)getLatency(I);
+  return power*(double)getLatency(I)/freq;
 }
 
 STICost::STICost(const MCSubtargetInfo* sti, const MCInstrInfo* mcii, double freq, double power):
@@ -80,6 +106,11 @@ STICost::STICost(const MCSubtargetInfo* sti, const MCInstrInfo* mcii, double fre
 
 STICost initSTICost(const string& objPath, const string& jsonPath){
   using namespace object;
+  //Open json
+  fstream jsonFile(jsonPath);
+  assert(jsonFile.is_open() && "file not open");
+  Json::Value root;
+  jsonFile >> root;
   //Get Object
   StringRef Filename(objPath);
   ErrorOr<std::unique_ptr<MemoryBuffer>> BuffOrErr =
@@ -104,22 +135,25 @@ STICost initSTICost(const string& objPath, const string& jsonPath){
     TargetRegistry::lookupTarget(theTriple.getTriple(), Error);
 
   //Retrieve STI
+  string MCPU = root["name"].asString();
+  errs() << "CPU: " << MCPU << "\n";
   SubtargetFeatures Features = Obj->getFeatures();
   const MCSubtargetInfo* STI =
     theTarget->createMCSubtargetInfo(theTriple.getTriple(),
-				     "",
+				     MCPU,
 				     Features.getString());
+ 
   assert(STI && "no STI");
+  if(!STI->getSchedModel().hasInstrSchedModel()){
+    errs() << "No scheduling model for " << theTriple.normalize() << " and CPU " << MCPU << "\nExiting.\n";
+    exit(1);
+  }
 
   //Retrieve MCII
   const MCInstrInfo* MCII = theTarget->createMCInstrInfo();
   assert(MCII && "no mcinstrinfo!");
 
   //Retrieve freq and power from json
-  fstream f(jsonPath);
-  assert(f.is_open() && "file not open");
-  Json::Value root;
-  f >> root;
   auto freq = root["freq"].asDouble();
   auto power = root["power"].asDouble();
 

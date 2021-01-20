@@ -27,7 +27,7 @@ for l in lines:
         pass
     i = i + 1
 
-file2 = open('estimates2')
+file2 = open('est_iio2v2')
 lines = file2.readlines()
 file2.close()
 est = dict()
@@ -47,21 +47,24 @@ for l in lines:
 k = list(res.keys())
 v = list(res.values())
 x = [str(i) for i in range(len(k))]
-print(x)
 pyplot.subplot(2,1,1)
 pyplot.plot(x,v)
 
-
-k2 = list(est.keys())
-v2 = list(est.values())
+#estimates may not be in the same order as the measures
+print(est.keys())
+est_fixed = dict()
+for key in res:
+    est_fixed[key] = est[key]
+k2 = list(est_fixed.keys())
+v2 = list(est_fixed.values())
 
 pyplot.plot(x,v2,"g")
-
-ratios = [ abs(e-m) / m for [m,e] in zip(v,v2)]
-for [k,e] in zip(k, ratios):
-    print(k,e)
+ratios = [ abs(est_fixed[key]-res[key])/res[key] for key in k]
+for [i,key,e] in zip(range(len(k)), k, ratios):
+    print(i,": ",key,e)
 
 pyplot.subplot(2,1,2)
+pyplot.ylim(0,1)
 pyplot.plot(x,ratios)
 
 

@@ -188,6 +188,16 @@ std::map<Instruction*, unsigned long> getInstrMap(Module& m){
     }
     return instrMap;
 }
+
+string getCPUName(const string& jsonPath){
+  //Open json
+  fstream jsonFile(jsonPath);
+  assert(jsonFile.is_open() && "file not open");
+  Json::Value root;
+  jsonFile >> root;
+
+  return root["name"].asString();
+}
     
 
 int main(int argc, char* argv[]){
@@ -284,7 +294,7 @@ int main(int argc, char* argv[]){
   std::map<Instruction*, unsigned long> instrMap; //instr->id  map
   if(assInstr || energy || printDisAss || countInstr) {
     //get the source location -> assembly map
-    theMap = getMap(binary, *m, printDisAss);
+    theMap = getMap(binary, getCPUName(json), *m, printDisAss);
     instrMap = getInstrMap(*m);
     if(printDisAss){
       printInstrMap(instrMap);
@@ -325,21 +335,22 @@ int main(int argc, char* argv[]){
       auto f =[&instrMap, &theMap, &costMap](Instruction* I){
 	double cost = 0;
 	for(auto& assInstr : theMap[instrMap[I]]) {
-	  cost += costMap[assInstr.getOperation()];
+	  cost += costMap.getCost(assInstr);
 	}
 	return cost;
       };
 
 
-      errs() << "\n" << "total: " << getTotalCost(bb_vec, cv, f) << "\n";
+      errs() << getTotalCost(bb_vec, cv, f) << "\n";
 
       //TODO: remove this
       /*auto stic = initSTICost(binary, json);
       auto jsonc = getCostMap(json);
       for(auto& el : theMap){
 	for(auto& instr : el.second){
+	  errs() << instr.getOperation() << " ";
 	  errs() << "json: " << jsonc[instr.getOperation()] << " ";
-	  errs() << "llvm: " << stic.getCost(instr.getMCInstr()) << "\n";
+	  errs() << "llvm: " << stic.getLatency(instr.getMCInstr()) << "\n";
 	}
       }*/
     }//end if

@@ -1,4 +1,6 @@
 #pragma once
+#include "map.h"
+#include "map.h"
 #include <json/json.h>
 #include <fstream>
 #include <assert.h>
@@ -21,39 +23,26 @@ private:
       "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al"};
   map<string,double> cm;
   bool isConditional(const string& name);
-  double& fallback(const string& name);
+  const double& fallback(const string& name);
+  double iiOver;
 public:
-  
+  CostMap(double iiover): iiOver(iiover){};
   void insert(string name, double cost){
-    auto check = cm.insert(pair<string,int>(name, cost));
+    auto check = cm.insert(make_pair(name, cost));
     assert(check.second && "element already existed in cost map");
   }
   
-  double& operator[](const string& name);
+  const double& operator[](const string& name);
+  double getCost(const ObjInstr& i);
+  double getInterInstOverhead() const {
+    return iiOver;
+  }
   
 };
 
 using costMap_t = CostMap;
 
-inline costMap_t getCostMap(string path) {
-  costMap_t cm;
-  fstream f(path);
-  assert(f.is_open() && "file not open");
-  Json::Value root;
-  f >> root;
-  auto freq = root["freq"].asDouble();
-  auto power = root["power"].asDouble();
-  auto cpiVec = root["cpi"];
-
-  for(auto& entry : cpiVec){
-    auto name = entry["opname"].asString();
-    double cpi = entry["cost"].asDouble();
-    double cost = cpi*power/freq;
-    cm.insert(name, cost);
-  }
-
-  return cm;
-}
+costMap_t getCostMap(string path);
 
 class STICost {
 private:
@@ -63,7 +52,7 @@ private:
   double power;
 public:
   STICost(const MCSubtargetInfo* sti, const MCInstrInfo* mcii, double freq, double power);
-  unsigned getLatency(const MCInst& I);
+  int getLatency(const MCInst& I);
   double getCost(const MCInst& I);
 };
 
