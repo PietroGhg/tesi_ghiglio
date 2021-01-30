@@ -40,6 +40,7 @@ add_executable(parsetrace
   extendCall.cpp
   costmap.cpp
   getCost.cpp
+  map.cpp
 )
 
 
