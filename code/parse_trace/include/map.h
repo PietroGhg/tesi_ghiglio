@@ -163,6 +163,14 @@ public:
       instructions[i].setDebugLoc(loc);
     }
   }
+
+  const ObjInstr& getInstrByAddr(unsigned long addr) const {
+    for(auto& i : instructions){
+      if(i.getAddr() == addr)
+	return i;
+    }
+    assert(false && "no addr in ObjFunction");
+  }
       
     
   void dump(){
@@ -214,6 +222,23 @@ public:
     for(auto f : functions){
       f.dump();
     }
+  }
+
+  bool isEndAddr(unsigned long addr) const {
+    for(auto& f : functions){
+      if(addr == f.getEnd())
+	return true;
+    }
+    return false;
+  }
+
+  const ObjInstr& getInstrByAddr(unsigned long addr) const {
+    for(auto& f : functions){
+      if(addr >= f.getBegin() && addr <= f.getEnd())
+	return f.getInstrByAddr(addr);
+    }
+    errs() << "addr: " << addr << "\n";
+    assert(false && "no addr in module");
   }
 
   InstrLines getMap() const {

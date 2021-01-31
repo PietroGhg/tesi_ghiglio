@@ -55,7 +55,10 @@ static cl::opt<bool>
 printDisAss("printDisAss", cl::desc("Print disassembly"), cl::init(false));
 
 static cl::opt<bool>
-countInstr("countInstr", cl::desc("Counts executed assembly instrs"), cl::init(false));
+countInstrs("countInstrs", cl::desc("Counts executed assembly instrs"), cl::init(false));
+
+static cl::opt<bool>
+countPairs("countPairs", cl::desc("Counts executed pairs of assembly instrs"), cl::init(false));
 
 static cl::opt<std::string>
 module("m", cl::desc("Input module"));
@@ -292,7 +295,7 @@ int main(int argc, char* argv[]){
 
   LinesInstr theMap;
   std::map<Instruction*, unsigned long> instrMap; //instr->id  map
-  if(assInstr || energy || printDisAss || countInstr) {
+  if(assInstr || energy || printDisAss || countInstrs) {
     //get the source location -> assembly map
     theMap = getMap(binary, getCPUName(json), *m, printDisAss);
     instrMap = getInstrMap(*m);
@@ -301,7 +304,7 @@ int main(int argc, char* argv[]){
     }
   }
 
-  if(countInstr){
+  if(countInstrs){
     using pairOU = pair<string, unsigned long>;
     auto cv = getCountVec(::count);
     auto m = getInstrCount(bb_vec, cv, instrMap, theMap);
@@ -315,7 +318,25 @@ int main(int argc, char* argv[]){
     for(auto& el : vec){
       errs() << el.first << " " << el.second << "\n";
     }
-  }
+  } //end countInstrs
+
+  if(countPairs){
+    using pairSSU = pair<pair<string, string>, unsigned long>;
+    auto objM = getObjM(binary, getCPUName(json), *m, printDisAss);
+    auto cv = getCountVec(::count);
+    auto mpc = getPairCount(bb_vec, cv, instrMap, theMap, objM);
+
+    vector<pairSSU> v;
+    for(auto& el : mpc)
+      v.push_back(el);
+    
+    std::sort(v.begin(), v.end(), [](pairSSU& p1, pairSSU& p2){
+      return p1.second > p2.second;
+    });
+    
+    for(auto& [p,c] : v)
+      errs() << p.first << ", " << p.second << ": " << c << "\n";
+  } //end countPairs
   
   if(total){
     if(!trace.empty()){

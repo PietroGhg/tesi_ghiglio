@@ -114,3 +114,11 @@ getInstrCount(const std::vector<BasicBlock*> bbVec,
 	      std::map<Instruction*, unsigned long>&
 	      instrIndex,
 	      LinesInstr& linesAddr);
+
+//! Counts how many times each pair of instructions is executed
+map<pair<string, string>, unsigned long>
+getPairCount(const vector<BasicBlock*> bbVec,
+	     vector<uint64_t> counts,
+	     map<Instruction*, unsigned long>& instrIndex,
+	     LinesInstr& linesAddr,
+	     const ObjModule& objM);

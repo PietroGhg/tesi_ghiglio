@@ -1,3 +1,4 @@
+#include "include/map.h"
 #include<getCost.h>
 
 
@@ -207,8 +208,8 @@ sourcecost_t getCost(std::vector<BasicBlock*>& bbVec,
 }
 
 double getTotalCost(std::vector<BasicBlock*>& bbVec,
-			   std::vector<uint64_t>& counts,
-			   std::function<double (Instruction*)> costFunction){
+		    std::vector<uint64_t>& counts,
+		    std::function<double (Instruction*)> costFunction){
   assert(bbVec.size() == counts.size() && "Size mismatch in count");
   double result = 0;
   
@@ -216,7 +217,6 @@ double getTotalCost(std::vector<BasicBlock*>& bbVec,
     auto& [bb, count] = p;
     for(auto& I : *bb){
       auto cost = costFunction(&I);
-      //errs() << cost << "\n";
       result += double(count)*cost;
     }
   }
@@ -237,12 +237,38 @@ getInstrCount(const std::vector<BasicBlock*> bbVec,
     for(auto& I : *bb){
       auto objInstrs = linesAddr[instrIndex[&I]];
       for(auto& objI : objInstrs){
-	if(!res.insert(make_pair(objI.getOperation(), 1)).second){
+	if(!res.insert(make_pair(objI.getOperation(), count)).second){
 	  res[objI.getOperation()] += count;
 	}
       }
     }
     
   }
+  return res;
+}
+
+map<pair<string, string>, unsigned long>
+getPairCount(const vector<BasicBlock*> bbVec,
+	     vector<uint64_t> counts,
+	     map<Instruction*, unsigned long>& instrIndex,
+	     LinesInstr& linesAddr,
+	     const ObjModule& objM){
+  map<pair<string, string>, unsigned long> res;
+  for(auto p : zip(bbVec, counts)){
+    auto& [bb, count] = p;
+    for(auto& I : *bb){
+      auto objInstrs = linesAddr[instrIndex[&I]];
+      for(auto& objI : objInstrs){
+	if(objM.isEndAddr(objI.getAddr()))
+	  continue;
+	auto nextI = objM.getInstrByAddr(objI.getAddr() + objI.getSize());
+	auto entry = make_pair(objI.getOperation(), nextI.getOperation());
+	if(!res.insert(make_pair(entry, count)).second){
+	  res[entry] += count;
+	}
+      }
+    }
+  }
+
   return res;
 }
