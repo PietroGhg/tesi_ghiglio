@@ -1,4 +1,5 @@
 from matplotlib import pyplot
+import functools
 file1 = open('measures')
 lines=file1.readlines()
 file1.close()
@@ -27,7 +28,7 @@ for l in lines:
         pass
     i = i + 1
 
-file2 = open('est_iio2v2')
+file2 = open('est_01_02_1')
 lines = file2.readlines()
 file2.close()
 est = dict()
@@ -60,6 +61,7 @@ v2 = list(est_fixed.values())
 
 pyplot.plot(x,v2,"g")
 ratios = [ abs(est_fixed[key]-res[key])/res[key] for key in k]
+
 for [i,key,e] in zip(range(len(k)), k, ratios):
     print(i,": ",key,e)
 
@@ -67,7 +69,7 @@ pyplot.subplot(2,1,2)
 pyplot.ylim(0,1)
 pyplot.plot(x,ratios)
 
-
-            
+total_error = functools.reduce(lambda x,y: x+y, ratios, 0)
+print(total_error)
 pyplot.show()
 

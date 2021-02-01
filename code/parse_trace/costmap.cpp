@@ -18,13 +18,15 @@ costMap_t getCostMap(string path) {
   auto freq = root["freq"].asDouble();
   auto power = root["power"].asDouble();
   auto iiOver = root["iiover"].asDouble();
+  auto memacc = root["memacc"].asDouble();
   auto cpiVec = root["cpi"];
   costMap_t cm(iiOver);
 
   for(auto& entry : cpiVec){
     auto name = entry["opname"].asString();
     double cpi = entry["cost"].asDouble();
-    double cost = cpi*power/freq;
+    auto memoperation = entry["memacc"].asBool();
+    double cost = cpi*power/freq * (memoperation ? memacc : 1.0);
     cm.insert(name, cost);
   }
 

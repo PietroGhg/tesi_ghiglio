@@ -295,7 +295,7 @@ int main(int argc, char* argv[]){
 
   LinesInstr theMap;
   std::map<Instruction*, unsigned long> instrMap; //instr->id  map
-  if(assInstr || energy || printDisAss || countInstrs) {
+  if(assInstr || energy || printDisAss || countInstrs || countPairs) {
     //get the source location -> assembly map
     theMap = getMap(binary, getCPUName(json), *m, printDisAss);
     instrMap = getInstrMap(*m);
@@ -315,8 +315,11 @@ int main(int argc, char* argv[]){
     std::sort(vec.begin(), vec.end(), [](pairOU& p1, pairOU& p2){
       return p1.second > p2.second;
     });
+    unsigned long total = 0;
+    for(auto& el : vec)
+      total += el.second;
     for(auto& el : vec){
-      errs() << el.first << " " << el.second << "\n";
+      errs() << el.first << " " << el.second << " " << double(el.second)/double(total)*100 << "\n";
     }
   } //end countInstrs
 
@@ -333,9 +336,13 @@ int main(int argc, char* argv[]){
     std::sort(v.begin(), v.end(), [](pairSSU& p1, pairSSU& p2){
       return p1.second > p2.second;
     });
+
+    unsigned long total = 0;
+    for(auto& el : v)
+      total += el.second;
     
     for(auto& [p,c] : v)
-      errs() << p.first << ", " << p.second << ": " << c << "\n";
+      errs() << p.first << ", " << p.second << ": " << c << " " << double(c)/double(total)*100 << "\n";
   } //end countPairs
   
   if(total){

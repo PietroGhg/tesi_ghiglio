@@ -40,8 +40,8 @@ void addCost(sourcecost_t& sc, SourceLocation& sourceLoc, double cost){
 }
 
 double getTotalCost(const std::vector<BBTrace>& bbTvec,
-			   const std::vector<BasicBlock*>& bbVec,
-			   std::function<double (Instruction*)> cf){
+		    const std::vector<BasicBlock*>& bbVec,
+		    std::function<double (Instruction*)> cf){
   double result = 0;
   for(auto& bbt : bbTvec){
     auto bb = bbVec[bbt.getBBid()];
