@@ -7,13 +7,42 @@
 
 using namespace std;
 
+FunctionLocation::FunctionLocation(llvm::DISubprogram* SubPr):
+  Line(SubPr->getLine()), Column(0), File(getFilename(SubPr)), Name(SubPr->getName().str()){}
+
+bool FunctionLocation::operator<(const FunctionLocation& Other) const {
+  if(File < Other.getFile())
+    return true;
+  else if(File > Other.getFile())
+    return false;
+  
+  if(Line < Other.getLine())
+    return true;
+  else if(Line > Other.getLine())
+    return false;
+
+  if(Column < Other.getColumn())
+    return true;
+  else if (Column > Other.getColumn())
+    return false;
+  
+  return false;
+}
+
+raw_ostream& operator<<(raw_ostream& os,
+			const FunctionLocation& fl){
+  os << fl.Name << " " << fl.Line << " " << fl.Column << " " << fl.File;
+  return os;
+}
+
 SourceLocation::SourceLocation(unsigned Line,
 			       unsigned Column,
 			       const std::string& File):
   Line(Line), Column(Column), File(File){}
 
 
-SourceLocation::SourceLocation(llvm::DILocation* Loc){
+SourceLocation::SourceLocation(llvm::DILocation* Loc):
+  FunLoc(Loc->getScope()->getSubprogram()){
   assert(Loc && "Location must not be null");
   llvm::DILocalScope *Scope = Loc->getScope();
   File = getFilename(Scope->getSubprogram());  
@@ -21,7 +50,8 @@ SourceLocation::SourceLocation(llvm::DILocation* Loc){
   Column = Loc->getColumn();
 }
 
-SourceLocation::SourceLocation(llvm::DISubprogram* SubPr){
+SourceLocation::SourceLocation(llvm::DISubprogram* SubPr):
+  FunLoc(SubPr){
   assert(SubPr && "Subprogram must not be null");
   File = getFilename(SubPr);
   Line = SubPr->getLine();

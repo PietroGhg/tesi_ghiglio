@@ -12,6 +12,7 @@
 #include "boost/algorithm/string.hpp" //string split
 #include "algorithm" //std::transform
 #include "fstream" //ifstream
+#include <boost/range/iterator_range_core.hpp>
 #include <fstream>
 #include <set>
 #include "FilesUtils.h"
@@ -50,6 +51,9 @@ testExp("testExp", cl::desc("Test if the expansion went alright"), cl::init(fals
 
 static cl::opt<bool>
 printCallGr("printCG", cl::desc("Print call graph"), cl::init(false));
+
+static cl::opt<bool>
+decorateCG("decorateCG", cl::desc("Decorate call graph"), cl::init(false));
 
 static cl::opt<bool>
 printDisAss("printDisAss", cl::desc("Print disassembly"), cl::init(false));
@@ -142,9 +146,41 @@ void printInstrMap(std::map<Instruction*, unsigned long> instrMap){
   }
 }
 
+std::map<FunctionLocation, double> getFunCost(sourcecost_t& sc){
+  std::map<FunctionLocation, double> res;
+  for(auto& [loc, cost] : sc){
+    auto funLoc = loc.getFunLoc();
+    if(!res.insert(make_pair<>(funLoc, cost)).second){
+      res[funLoc] += cost;
+    }
+  }
+  return res;
+}
+
+void decorateCallGraph(const CallGraph& cg, sourcecost_t& sc){
+  auto funCost = getFunCost(sc);
+
+  errs() <<  "digraph cg{\n";
+  for(auto v : make_iterator_range(vertices(cg))){
+    auto* subPr = cg[v].f->getSubprogram();
+    errs() << vertDOT(cg, v) << " [label= \"" << cg[v].f->getName() << " " << funCost[FunctionLocation(subPr)]
+	   << "\" ]\n";
+  }
+
+  for(auto e : make_iterator_range(edges(cg))){
+    auto s = vertDOT(cg, source(e,cg));
+    auto t = vertDOT(cg, target(e,cg));
+    auto f = [](bool rec){ return rec ? "rec" : "not_rec";};
+    errs() << s << " -> " << t << "[label = \"" << f(cg[e].recursive) << " " <<
+      cg[e].callsite.toString() << " " << sc[cg[e].callsite] << "\"]\n";
+  }
+  errs() << "}\n";
+}
+
 void printAnnotatedFile(const string& sourcePath,
 			sourcecost_t& sc,
-			const string& metric){
+			const string& metric,
+			const CallGraph& cg){
   ifstream source(sourcePath);
   assert(source.is_open() && "Unable to open source file"); 
 
@@ -175,6 +211,9 @@ void printAnnotatedFile(const string& sourcePath,
     i++;
   }
   source.close();
+
+  if(decorateCG)
+    decorateCallGraph(cg, sc);
 }
 
 std::map<Instruction*, unsigned long> getInstrMap(Module& m){
@@ -285,7 +324,7 @@ int main(int argc, char* argv[]){
   if(llvmInstr) {
     auto scIR = getIC(bb_trace_vec, bb_vec, cg, callsites);
     for(auto& f : files){
-      printAnnotatedFile(f, scIR, "LLVM instr");
+      printAnnotatedFile(f, scIR, "LLVM instr", cg);
     }
 
     errs() << "Total LLVM instr: " << getTotalLLVM(bb_trace_vec, bb_vec) << "\n";
@@ -392,7 +431,7 @@ int main(int argc, char* argv[]){
 
       //print the annotated files
       for(auto& f : files){
-	printAnnotatedFile(f, scAss, "assembly inst");
+	printAnnotatedFile(f, scAss, "assembly inst", cg);
       }
 
       errs() << "Total assembly instr: " << getTotalAss(bb_trace_vec, bb_vec, instrMap, theMap) << "\n";
@@ -406,7 +445,7 @@ int main(int argc, char* argv[]){
       auto scJoule = getJoule(bb_trace_vec, bb_vec, cg ,instrMap, theMap,
 			      costMap, callsites);
       for(auto& f : files){
-	printAnnotatedFile(f, scJoule, "nanoJ");
+	printAnnotatedFile(f, scJoule, "nanoJ", cg);
       }
 
 

@@ -47,7 +47,7 @@ inline nodemap_t makeNodeMap(Module* M){
         res[&f] = i;
         i++;
     }
-    return std::move(res);
+    return res;
 }
 
 /**function that checks if the function call corresponding to the given edge leads
@@ -148,7 +148,7 @@ inline std::string getDOT(const CallGraph& cg){
         res += edgeDOT(cg, e) + "\n";
     }
     res += "}";
-    return std::move(res);
+    return res;
 }
 
 inline vertex_t getMainNode(const CallGraph& cg){
@@ -160,8 +160,7 @@ inline vertex_t getMainNode(const CallGraph& cg){
         }
     }
 
-    errs() << "no main function\n";
-    throw;
+    assert(false && "no main function\n");
 }
 
 //! Function that returns the edge correspoding to the callsite given as parameter
@@ -196,9 +195,8 @@ inline edge_t getEdge(const CallGraph& cg, const std::set<edge_t>& rec_callsites
         }
     }
 
-    errs() << "error while returning edge of a recursive callsite.\n";
-    errs() << "is it really recursive?\n";
-    throw;
+    assert(false && "error while returning edge of a recursive callsite. is it really recursive?\n");
+
 }
 
 //! Function that checks wheter to assign or not the instruction count cost to a given callsite
@@ -213,7 +211,7 @@ inline std::set<edge_t> getRecursiveCallSites(const CallGraph& cg){
             res.insert(e);
         }
     }
-    return std::move(res);
+    return res;
 }
 
 inline edge_t getEdgeByCallsite(CallGraph& cg, callsite_t callsite){
@@ -223,6 +221,5 @@ inline edge_t getEdgeByCallsite(CallGraph& cg, callsite_t callsite){
         }
     }
 
-    errs() << "error while retrieving edge by callsite\n";
-    throw;
+    assert(false && "error while retrieving edge by callsite\n");
 }

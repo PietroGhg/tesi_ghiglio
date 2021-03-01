@@ -6,11 +6,28 @@
 #include "llvm/Support/raw_ostream.h"
 #include "FilesUtils.h"
 
+class FunctionLocation {
+private:
+  std::string Name;
+  unsigned Line;
+  unsigned Column;
+  std::string File;
+public:
+  FunctionLocation() : Line(0), Column(0), File(""){}
+  FunctionLocation(llvm::DISubprogram* SubPr);
+  unsigned getLine() const { return Line; }
+  unsigned getColumn() const { return Column; }
+  bool operator<(const FunctionLocation& Other) const;
+  const std::string& getFile() const { return File; }
+  friend raw_ostream& operator<<(raw_ostream& os, const FunctionLocation& sl);
+};
+
 class SourceLocation {
  private:
   unsigned Line;
   unsigned Column;
   std::string File;
+  FunctionLocation FunLoc;
  public:
   SourceLocation() : Line(0), Column(0), File("") {}
   SourceLocation(unsigned Line, unsigned Column, const std::string& File);
@@ -24,6 +41,7 @@ class SourceLocation {
   unsigned getColumn() const { return Column; }
   unsigned long getSingle(std::map<std::string, unsigned>& fileIDMap);
   const std::string& getFile() const { return File; }
+  const FunctionLocation& getFunLoc() const { return FunLoc; }
   std::string toString() const ;
   friend raw_ostream& operator<<(raw_ostream& os, const SourceLocation& sl);
 };

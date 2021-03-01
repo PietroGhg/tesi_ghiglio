@@ -53,11 +53,11 @@ double getTotalCost(const std::vector<BBTrace>& bbTvec,
 }
 
 sourcecost_t getCost(const std::vector<BBTrace>& bbTvec, 
-			    const std::vector<BasicBlock*>& bbVec,
-			    const CallGraph& cg,
-			    std::function<double (Instruction*)>
-			    costFunction,
-			    bool attributeCallsites){
+		     const std::vector<BasicBlock*>& bbVec,
+		     const CallGraph& cg,
+		     std::function<double (Instruction*)>
+		     costFunction,
+		     bool attributeCallsites){
     //TODO: this should carry also info about which function the line belongs to
   sourcecost_t sc;
   auto main_node = getMainNode(cg);
@@ -66,12 +66,12 @@ sourcecost_t getCost(const std::vector<BBTrace>& bbTvec,
   edge_t in_edge;
 
   for(auto bbt : bbTvec){
-    errs() << "bb: " << bbt.getBBid() << "\n";
     for(auto& i : *bbVec[bbt.getBBid()]){      
       SourceLocation funcLocation(i.getParent()->getParent()->getSubprogram());
       curr_node = main_node;
       auto loc = i.getDebugLoc();
       auto cost = costFunction(&i);
+      
       if(loc){
 	SourceLocation sourceLoc(loc.get());
 	addCost(sc, sourceLoc, cost);
