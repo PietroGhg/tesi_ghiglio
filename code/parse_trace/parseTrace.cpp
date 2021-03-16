@@ -381,7 +381,7 @@ int main(int argc, char* argv[]){
       total += el.second;
     
     for(auto& [p,c] : v)
-      errs() << p.first << ", " << p.second << ": " << c << " " << double(c)/double(total)*100 << "\n";
+      errs() << p.first << ", " << p.second << ": " << c << " " << /*double(c)/double(total)*100 <<*/ "\n";
   } //end countPairs
   
   if(total){

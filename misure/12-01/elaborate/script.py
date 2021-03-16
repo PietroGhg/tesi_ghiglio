@@ -28,7 +28,8 @@ for l in lines:
         pass
     i = i + 1
 
-file2 = open('est_01_02_1')
+estname = 'est_memacc'
+file2 = open(estname)
 lines = file2.readlines()
 file2.close()
 est = dict()
@@ -48,28 +49,42 @@ for l in lines:
 k = list(res.keys())
 v = list(res.values())
 x = [str(i) for i in range(len(k))]
-pyplot.subplot(2,1,1)
-pyplot.plot(x,v)
+
+p1 = pyplot.subplot(2,1,1)
+pyplot.plot(x,v,label='measure')
+pyplot.xticks(x, k, rotation='vertical')
+pyplot.subplots_adjust(bottom=0.05, hspace=0.99999)
+p1.set_ylabel('energy', loc='center')
 
 #estimates may not be in the same order as the measures
-print(est.keys())
 est_fixed = dict()
 for key in res:
     est_fixed[key] = est[key]
 k2 = list(est_fixed.keys())
 v2 = list(est_fixed.values())
 
-pyplot.plot(x,v2,"g")
+pyplot.plot(x,v2,"g",label='estimate')
+p1.legend()
 ratios = [ abs(est_fixed[key]-res[key])/res[key] for key in k]
 
-for [i,key,e] in zip(range(len(k)), k, ratios):
-    print(i,": ",key,e)
+def pretty(n):
+    return '{0:.4f}'.format(n)
 
-pyplot.subplot(2,1,2)
+for [i,key,mes, est, err] in zip(range(len(k)), k, v, v2, ratios):
+    s = key.split()
+    print(s[0], ' & ', s[1], ' & ', s[2], ' & ', pretty(mes), ' & ', pretty(est), ' & ', pretty(err), '\\\\')
+    print('\\hline')
+
+p2 = pyplot.subplot(2,1,2)
 pyplot.ylim(0,1)
 pyplot.plot(x,ratios)
+pyplot.xticks(x, ['' for e in x])
+p2.set_ylabel('error %', loc='center')
 
-total_error = functools.reduce(lambda x,y: x+y, ratios, 0)
+
+
+total_error = float(functools.reduce(lambda x,y: x+y, ratios, 0)) / len(k)
 print(total_error)
+pyplot.savefig(estname + '.png')
 pyplot.show()
 

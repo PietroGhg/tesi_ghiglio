@@ -2,7 +2,7 @@
     "name": "cortex-m4",
     "freq" : 120,
     "power": 171,
-    "iiover": 2.5,
+    "iiover": 2.67,
     "memacc": 0.9,
     "cpi": [
 	{ "opname": "movw", "cost": 1, "memacc": 0},
