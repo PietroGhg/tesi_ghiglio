@@ -1,0 +1,29 @@
+gemver 10 900
+start 5.52 0.7369458
+end 6.639 0.9389603
+delta
+
+gesummv 10 900
+start 5.124 0.7647322
+end 6.034 0.9239808
+delta
+
+symm 10 100
+start 5.593 0.7488916
+end 22.094 3.889564
+delta
+
+syrk 10 900
+start 5.036 0.5721813
+end 6.688 0.8651633
+delta
+
+syr2k 10 900
+start 5.194 0.7345589
+end 7.943 1.226244
+delta
+
+trmm 10 900
+start 5.691 0.7391248
+end 6.785 0.9341515
+delta
